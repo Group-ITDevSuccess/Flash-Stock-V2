@@ -63,7 +63,7 @@ class LoginLDAP(View):
                     messages.success(request,
                                      "Votre compte a été créé. Contactez le service Sage ou DSI pour valider votre "
                                      "accès !")
-                    return redirect('auths:login')
+                    return redirect('guard:login')
 
             else:
                 messages.error(request, "Login ou Mot de passe Incorrect !")

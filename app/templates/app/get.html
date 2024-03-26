@@ -486,7 +486,7 @@ html.dark td.highlight {
 
                 // Envoyer les données au backend via AJAX
                 $.ajax({
-                    url: '{% url 'home:update_societe_field' %}',  // Remplacez par l'URL de votre vue de mise à jour
+                    url: '{% url 'app:update_societe_field' %}',  // Remplacez par l'URL de votre vue de mise à jour
                     method: 'POST',
                     data: {
                         societe_id: societeId,
@@ -843,7 +843,7 @@ html.dark td.highlight {
                             $('#cellDetailsModal').modal('show');
 
                             $.ajax({
-                                url: '{% url "home:cell_details_view" %}',
+                                url: '{% url "app:cell_details_view" %}',
                                 method: 'POST',
                                 data: req,
                                 dataType: 'json',

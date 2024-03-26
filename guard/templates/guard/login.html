@@ -15,13 +15,13 @@
     <div class="container mt-5">
         <div class="row d-flex justify-content-center">
             <div class="col-md-3">
-                <div class="card px-5 py-5 shadow" id="form1">
+                <div class="card px-3 py-5 shadow" id="form1">
                     <div class="justify-content-center align-items-center text-center">
                         <img src="{% static 'img/logo-inviso.ico' %}" alt="" class="img-fluid" width="100">
                     </div>
 
                     <h5 class="text-center mt-4">Authentification</h5>
-                    <form id="" class="form-data mt-3 mb-5" method="post" action="{% url 'auths:login' %}">
+                    <form id="" class="form-data mt-3 mb-3" method="post" action="{% url 'guard:login' %}">
                         {% csrf_token %}
                         <div class="forms-inputs mb-4">
                             <span>{{ form.username.label_tag }}</span>
