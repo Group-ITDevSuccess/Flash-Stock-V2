@@ -124,6 +124,7 @@ venv.bak/
 .spyderproject
 .spyproject
 
+static/
 # Rope project settings
 .ropeproject
 

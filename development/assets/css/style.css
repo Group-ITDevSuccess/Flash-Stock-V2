@@ -1,0 +1,128 @@
+/* Variables */
+:root {
+    --bg: #fff;
+    --text: #7288a2;
+    --gray: #4d5974;
+    --lightgray: #e5e5e5;
+    --blue: #03b5d2;
+}
+
+/* Global Styles */
+* {
+    box-sizing: border-box;
+}
+
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+.nav-tabs {
+    color: #000; /* Couleur de fond pour les onglets */
+    border-bottom: 1px solid #dee2e6; /* Bordure inférieure des onglets */
+}
+
+.nav-tabs .nav-item {
+    margin-bottom: 0;
+}
+
+.nav-tabs .nav-link {
+    color: #000; /* Couleur du texte pour les onglets */
+}
+
+.nav-tabs .nav-link.active {
+    background-color: rgb(3, 181, 210); /* Couleur de fond pour l'onglet actif */
+    border-color: rgb(3, 181, 210); /* Couleur de la bordure pour l'onglet actif */
+    color: white;
+}
+
+/* Accordion Styles */
+.accordion .accordion-item {
+    border-bottom: 1px solid var(--lightgray);
+}
+
+.accordion button {
+    position: relative;
+    display: block;
+    text-align: left;
+    width: 100%;
+    padding: 1em 0;
+    color: var(--text);
+    font-size: 1.15rem;
+    font-weight: 400;
+    border: none;
+    background: none;
+    outline: none;
+}
+
+.accordion button:hover,
+.accordion button:focus {
+    cursor: pointer;
+    color: var(--blue);
+}
+
+.accordion button:hover::after,
+.accordion button:focus::after {
+    cursor: pointer;
+    color: var(--blue);
+    border: 1px solid var(--blue);
+}
+
+.accordion .accordion-title {
+    padding: 1em 1.5em 1em 0;
+}
+
+.accordion button[aria-expanded='true'] {
+    color: var(--blue);
+}
+
+.accordion button[aria-expanded='true'] .icon::after {
+    width: 0;
+}
+
+.accordion .icon {
+    display: inline-block;
+    position: absolute;
+    top: 18px;
+    right: 0;
+    width: 22px;
+    height: 22px;
+    border: 1px solid;
+    border-radius: 22px;
+}
+
+.accordion .icon::before,
+.accordion .icon::after {
+    display: block;
+    position: absolute;
+    content: '';
+}
+
+.accordion .icon::before {
+    top: 9px;
+    left: 5px;
+    width: 10px;
+    height: 2px;
+    background: currentColor;
+}
+
+.accordion .icon::after {
+    top: 5px;
+    left: 9px;
+    width: 2px;
+    height: 10px;
+    background: currentColor;
+}
+
+.accordion .accordion-content {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 200ms linear, max-height 200ms linear;
+}
+
+.accordion .accordion-content table {
+    font-size: 1rem;
+    margin: 2em 0;
+}
+
