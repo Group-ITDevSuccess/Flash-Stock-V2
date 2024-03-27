@@ -6,902 +6,191 @@
     {{ name }}
 {% endblock %}
 {% block style %}
-    <style>
 
-        .fixed-header-table {
-            position: relative;
-        }
-
-        .text-right-custom {
-            text-align: right;
-        }
-
-
-        .fixed-header-table thead {
-            position: sticky;
-            top: 0;
-            z-index: 1;
-            background-color: #fff; /* Fond blanc pour masquer le tbody lors du défilement */
-        }
-
-        td.highlight {
-    background-color: whitesmoke !important;
-}
-
-html.dark td.highlight {
-    background-color: rgba(var(--dt-row-hover), 0.082) !important;
-}
-
-    </style>
 {% endblock %}
 {% block content %}
     <div class="container-fluid mt-2" style="width: 100%;">
-        {% if datas %}
-            <div class="row">
-                <div class="col-12">
-                    <div class="data_table">
-                        <form method="post">
-                            {% csrf_token %}
-                            <div class="row">
-                                <div class="col-auto">
-                                    <div class="input-group mb-3">
-                                        <button type="button" data-bs-toggle="modal" data-bs-target="#societeModal"
-                                                class="btn btn-outline-primary  {% if not user.is_staff %}disabled{% endif %}">
-                                            <i class="fa fa-building"></i>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="col-auto">
-                                    <div class="input-group mb-3">
-                                        <label for="{{ form.societe.id_for_label }}"
-                                               class="input-group-text">Société</label>
-                                        {{ form.societe }}
-                                    </div>
-                                </div>
-                                <div class="col-auto">
-                                    <div class="input-group mb-3">
-                                        <label for="{{ form.filtre.id_for_label }}"
-                                               class="input-group-text">Dépôts</label>
-                                        {{ form.filtre }}
-                                    </div>
-                                </div>
-                                {% if user.is_staff %}
-                                    <div class="col-auto">
-                                        <div class="input-group mb-3">
-                                            <button type="button" onclick="reloadPage()"
-                                                    class="btn btn-outline-warning">
-                                                <i class="fa fa-sync-alt"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                {% endif %}
-
-                                <div class="col-auto">
-                                    <div class="input-group mb-3">
-                                        <label for="{{ form.debut.id_for_label }}"
-                                               class="input-group-text">Début</label>
-                                        {{ form.debut }}
-                                    </div>
-                                </div>
-                                <div class="col-auto">
-                                    <div class="input-group mb-3">
-                                        <label for="{{ form.fin.id_for_label }}" class="input-group-text">Fin</label>
-                                        {{ form.fin }}
-                                    </div>
-                                </div>
-                                <div class="col-auto">
-                                    <button type="submit" class="btn btn-outline-success mb-3"><i
-                                            class="fas fa-search"></i>
-                                    </button>
-                                    <button type="reset" class="btn btn-outline-danger mb-3"><i
-                                            class="fas fa-backspace"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-
-                        <table id="data-table"
-                               class="table table-striped table-sm table-hover table-bordered row-border select-row order-column"
-                               style="width:100%">
-                            <thead class="table-dark">
-                            <tr>
-                                <th rowspan="2" class="text-center text-white"
-                                    style="background-color: #00B050;vertical-align: middle;">Catégorie
-                                </th>
-                                <th rowspan="2" class="text-center text-white"
-                                    style="background-color: #00B050;vertical-align: middle;">Intitulé
-                                </th>
-                                <th rowspan="2" class="text-center text-white"
-                                    style="background-color: #00B050;vertical-align: middle;">Stock Initial
-                                    Système<code>*</code>
-                                </th>
-                                <th colspan="7" class="text-center text-white"
-                                    style="background-color: #4472C4;vertical-align: middle;">Entrée
-                                </th>
-                                <th rowspan="2" class="text-center text-white"
-                                    style="background-color: #00B050;vertical-align: middle;">Total Entrée
-                                </th>
-                                <th colspan="6" class="text-center text-white"
-                                    style="background-color: #FFC000;vertical-align: middle;">Sortie
-                                </th>
-                                <th rowspan="2" class="text-center text-white"
-                                    style="background-color: #00B050;vertical-align: middle;">Total Sortie
-                                </th>
-                                <th rowspan="2" class="text-center text-white"
-                                    style="background-color: #A5A5A5;vertical-align: middle;">Stock Final Calculé
-                                </th>
-                                <th rowspan="2" class="text-center text-white"
-                                    style="background-color: #00B050;vertical-align: middle;">Stock Final
-                                    Système<code>*</code>
-                                </th>
-                            </tr>
-                            <tr>
-                                <th style="background-color: #B4C6E7;vertical-align: middle;">Retour<code>*</code>
-                                <th style="background-color: #B4C6E7;vertical-align: middle;">Réception<code>*</code>
-                                </th>
-                                <th style="background-color: #B4C6E7;vertical-align: middle;">Production
-                                    OF<code>*</code></th>
-                                <th style="background-color: #B4C6E7;vertical-align: middle;">Assemblage</th>
-                                <th style="background-color: #B4C6E7;vertical-align: middle;">Transfert<code>*</code>
-                                </th>
-                                <th style="background-color: #B4C6E7;vertical-align: middle;">Mvt Entrée<code>*</code>
-                                <th style="background-color: #B4C6E7;vertical-align: middle;">Mvt Entrée Inventaire<code>*</code>
-                                </th>
-                                <th style="background-color: #F8CBAD;vertical-align: middle;">Vente<code>*</code></th>
-                                <th style="background-color: #F8CBAD;vertical-align: middle;">Consommation
-                                    OF<code>*</code></th>
-                                <th style="background-color: #F8CBAD;vertical-align: middle;">Désassemblage</th>
-                                <th style="background-color: #F8CBAD;vertical-align: middle;">Transfert<code>*</code>
-                                </th>
-                                <th style="background-color: #F8CBAD;vertical-align: middle;">Mvt Sortie<code>*</code>
-                                <th style="background-color: #F8CBAD;vertical-align: middle;">Mvt Sortie Inventaire<code>*</code>
-                                </th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for data in datas %}
-                                <tr>
-                                    <td class="fw-bold border border-dark">{{ data.0 }}</td>
-                                    <td class="fw-bold border border-dark">{{ data.1 }}</td>
-                                    <td style="cursor: help;"
-                                        class="fw-bold border border-dark text-right-custom">{{ data.2|floatformat:2|default:'' }}</td>
-
-                                    <td style="cursor: help;" class="text-right-custom">
-                                        {% if data.3 != 0 %}{{ data.3|floatformat:2|default:'' }}{% endif %}</td>
-                                    <td style="cursor: help;" class="text-right-custom">
-                                        {% if data.4 != 0 %}{{ data.4|floatformat:2|default:'' }}{% endif %}</td>
-                                    <td style="cursor: help;" class="text-right-custom">
-                                        {% if data.5 != 0 %}{{ data.5|floatformat:2|default:'' }}{% endif %}</td>
-                                    <td style="cursor: no-drop;" class="text-right-custom">
-                                        {% if data.6 != 0 %}{{ data.6|floatformat:2|default:'' }}{% endif %}</td>
-                                    <td style="cursor: help;" class="text-right-custom">
-                                        {% if data.7 != 0 %}{{ data.7|floatformat:2|default:'' }}{% endif %}</td>
-                                    <td style="cursor: help;" class="text-right-custom"
-                                        >{% if data.8 != 0 %}{{ data.8|floatformat:2|default:'' }}{% endif %}</td>
-                                    <td style="cursor: help;" class="text-right-custom">
-                                        {% if data.9 != 0 %}{{ data.9|floatformat:2|default:'' }}{% endif %}</td>
-                                    <td style="cursor: no-drop;" class="fw-bold border border-dark text-right-custom">
-                                        {{ data.10|floatformat:2|default:'' }}</td>
-                                    <td style="cursor: help;" class="text-right-custom">
-                                        {% if data.11 != 0 %}{{ data.11|floatformat:2|default:'' }}{% endif %}</td>
-                                    <td style="cursor: help;" class="text-right-custom">
-                                        {% if data.12 != 0 %}{{ data.12|floatformat:2|default:'' }}{% endif %}</td>
-                                    <td style="cursor: no-drop;" class="text-right-custom">
-                                        {% if data.13 != 0 %}{{ data.13|floatformat:2|default:'' }}{% endif %}</td>
-                                    <td style="cursor: help;"
-                                        class="text-right-custom">{% if data.14 != 0 %}{{ data.14|floatformat:2|default:'' }}{% endif %}</td>
-                                    <td style="cursor: help;"
-                                        class="text-right-custom">{% if data.15 != 0 %}{{ data.15|floatformat:2|default:'' }}{% endif %}</td>
-                                    <td style="cursor: help;"
-                                        class="text-right-custom">{% if data.16 != 0 %}{{ data.16|floatformat:2|default:'' }}{% endif %}</td>
-                                    <td style="cursor: no-drop;"
-                                        class="fw-bold border border-dark text-right-custom">{{ data.17|floatformat:2|default:'' }}</td>
-                                    <td style="cursor: no-drop;"
-                                        class="fw-bold border border-dark text-right-custom">{{ data.18|floatformat:2|default:'' }}</td>
-                                    <td style="cursor: help;"
-                                        class="fw-bold border border-dark text-right-custom">{{ data.19|floatformat:2|default:'' }}</td>
-
-                                </tr>
-
-                            {% endfor %}
-                            </tbody>
-                            <tfoot align="right">
-                            <tr>
-                                <th class="text-right-custom text-white" style="background-color: #00B050;"></th>
-                                <th class="text-right-custom text-white" style="background-color: #00B050;"></th>
-                                <th class="text-right-custom text-white" style="background-color: #00B050;"></th>
-                                <th class="text-right-custom"></th>
-                                <th class="text-right-custom"></th>
-                                <th class="text-right-custom"></th>
-                                <th class="text-right-custom"></th>
-                                <th class="text-right-custom"></th>
-                                <th class="text-right-custom"></th>
-                                <th class="text-right-custom"></th>
-                                <th class="text-right-custom text-white" style="background-color: #00B050;"></th>
-                                <th class="text-right-custom"></th>
-                                <th class="text-right-custom"></th>
-                                <th class="text-right-custom"></th>
-                                <th class="text-right-custom"></th>
-                                <th class="text-right-custom"></th>
-                                <th class="text-right-custom"></th>
-                                <th class="text-right-custom text-white" style="background-color: #00B050;"></th>
-                                <th class="text-right-custom text-white" style="background-color: #A5A5A5;"></th>
-                                <th class="text-right-custom text-white" style="background-color: #00B050;"></th>
-                            </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            {% include 'layout/details-modal.html' %}
-            {% include 'layout/societe-modal.html' %}
-        {% else %}
-            <div class="container py-5 h-100">
-                <div class="row d-flex justify-content-center align-items-center h-100">
-                    <div class="col col-md-10 col-lg-8 col-xl-6">
-                        <div class="card" style="border-radius: 15px;">
-                            <div class="card-body p-4">
-                                <div class="d-flex text-black">
-                                    <div class="flex-shrink-0">
-                                        <img src="{% static 'img/avatar.jpg' %}"
-                                             alt="Generic placeholder image" class="img-fluid"
-                                             style="width: 180px; border-radius: 10px;">
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <h5 class="mb-1">{{ user.last_name }} {{ user.first_name }}</h5>
-
-                                        {% if user.is_staff and not user.is_superuser %}
-                                            <div class="mb-3">
-                                                <p class="mb-2 pb-1" style="color: #2b2a2a;">
-                                                    <i class="fas fa-star  text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <span class="fw-bold">(Staff)</span>
-                                                </p>
-
-                                            </div>
-                                        {% elif user.is_superuser and user.is_staff %}
-                                            <div class="mb-3">
-                                                <p class="mb-2 pb-1" style="color: #2b2a2a;">
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <i class="fas fa-star text-warning"></i>
-                                                    <span class="fw-bold">(Admin)</span>
-                                                </p>
-
-                                            </div>
-                                        {% else %}
-                                            <div class="mb-3">
-                                                <p class="mb-2 pb-1" style="color: #2b2a2a;">
-                                                    <i class="fas fa-star text-warning"></i></p>
-                                                <span class="fw-bold">(Visiteur)</span>
-                                            </div>
-                                        {% endif %}
-                                        <ul>
-                                            <li><b>ID:</b> {{ user }}</li>
-                                            <li><b>EMAIL:</b> {{ user.email }}</li>
-                                        </ul>
-
-                                    </div>
-                                </div>
-                                <div class="d-flex justify-content-start rounded-3 p-2 mt-4"
-                                     style="background-color: #efefef;">
-                                    <form method="post" action="">
-                                        <p class="mb-4">Pour continuer, remplir les champs respectifs</p>
-
-                                        {% csrf_token %}
-                                        <div class="row">
-                                            <div class="col-md-5 mb-3">
-                                                <div class="input-group">
-                                                    <label for="{{ form.societe.id_for_label }}"
-                                                           class="input-group-text">Société</label>
-                                                    {{ form.societe }}
-                                                </div>
-                                            </div>
-                                            <div class="col-md-5 mb-3">
-                                                <div class="input-group">
-                                                    <label for="{{ form.filtre.id_for_label }}"
-                                                           class="input-group-text">Dépôts</label>
-                                                    {{ form.filtre }}
-                                                </div>
-                                            </div>
-                                            <div class="col-md-2 mb-3">
-                                                <button type="button" data-bs-toggle="modal"
-                                                        data-bs-target="#societeModal"
-                                                        class="btn btn-outline-primary  {% if not user.is_staff %}disabled{% endif %}">
-                                                    <i class="fa fa-building"></i>
-                                                </button>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="input-group mb-3">
-                                                    <label for="{{ form.debut.id_for_label }}"
-                                                           class="input-group-text">Début</label>
-                                                    {{ form.debut }}
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="input-group mb-3">
-                                                    <label for="{{ form.fin.id_for_label }}"
-                                                           class="input-group-text">Fin</label>
-                                                    {{ form.fin }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="d-flex pt-1">
-                                            <button type="submit"
-                                                    class="btn btn-outline-primary me-1 flex-grow-1">
-                                                Chercher
-                                            </button>
-                                            <button type="reset" class="btn btn-danger flex-grow-1">Effacer
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% include 'layout/societe-modal.html' %}
-        {% endif %}
+        <div class="">
+            <table id="tableInventaire"
+                   class="table table-striped table-sm table-hover table-bordered row-border select-row order-column nowrap"
+                   style="width:100%">
+                <thead class="table-dark">
+                <tr>
+                    <th rowspan="2" class="text-white bg-dark" style="vertical-align: middle;">#</th>
+                    <th rowspan="2" class="text-center text-white"
+                        style="background-color: #00B050;vertical-align: middle;">Catégorie
+                    </th>
+                    <th rowspan="2" class="text-center text-white"
+                        style="background-color: #00B050;vertical-align: middle;">Intitulé
+                    </th>
+                    <th rowspan="2" class="text-center text-white"
+                        style="background-color: #00B050;vertical-align: middle;">Stock Initial
+                        Système<code>*</code>
+                    </th>
+                    <th colspan="7" class="text-center text-white"
+                        style="background-color: #4472C4;vertical-align: middle;">Entrée
+                    </th>
+                    <th rowspan="2" class="text-center text-white"
+                        style="background-color: #00B050;vertical-align: middle;">Total Entrée
+                    </th>
+                    <th colspan="6" class="text-center text-white"
+                        style="background-color: #FFC000;vertical-align: middle;">Sortie
+                    </th>
+                    <th rowspan="2" class="text-center text-white"
+                        style="background-color: #00B050;vertical-align: middle;">Total Sortie
+                    </th>
+                    <th rowspan="2" class="text-center text-white"
+                        style="background-color: #A5A5A5;vertical-align: middle;">Stock Final Calculé
+                    </th>
+                    <th rowspan="2" class="text-center text-white"
+                        style="background-color: #00B050;vertical-align: middle;">Stock Final
+                        Système<code>*</code>
+                    </th>
+                </tr>
+                <tr>
+                    <th style="background-color: #B4C6E7;vertical-align: middle;">Retour<code>*</code>
+                    <th style="background-color: #B4C6E7;vertical-align: middle;">Réception<code>*</code>
+                    </th>
+                    <th style="background-color: #B4C6E7;vertical-align: middle;">Production
+                        OF<code>*</code></th>
+                    <th style="background-color: #B4C6E7;vertical-align: middle;">Assemblage</th>
+                    <th style="background-color: #B4C6E7;vertical-align: middle;">Transfert<code>*</code>
+                    </th>
+                    <th style="background-color: #B4C6E7;vertical-align: middle;">Mvt Entrée<code>*</code>
+                    <th style="background-color: #B4C6E7;vertical-align: middle;">Mvt Entrée
+                        Inventaire<code>*</code>
+                    </th>
+                    <th style="background-color: #F8CBAD;vertical-align: middle;">Vente<code>*</code></th>
+                    <th style="background-color: #F8CBAD;vertical-align: middle;">Consommation
+                        OF<code>*</code></th>
+                    <th style="background-color: #F8CBAD;vertical-align: middle;">Désassemblage</th>
+                    <th style="background-color: #F8CBAD;vertical-align: middle;">Transfert<code>*</code>
+                    </th>
+                    <th style="background-color: #F8CBAD;vertical-align: middle;">Mvt Sortie<code>*</code>
+                    <th style="background-color: #F8CBAD;vertical-align: middle;">Mvt Sortie
+                        Inventaire<code>*</code>
+                    </th>
+                </tr>
+                </thead>
+                <tfoot>
+                <tr>
+                    <th class="text-right-custom text-white" style="background-color: #00B050;"></th>
+                    <th class="text-right-custom text-white" style="background-color: #00B050;"></th>
+                    <th class="text-right-custom text-white" style="background-color: #00B050;"></th>
+                    <th class="text-right-custom text-white" style="background-color: #00B050;"></th>
+                    <th class="text-right-custom"></th>
+                    <th class="text-right-custom"></th>
+                    <th class="text-right-custom"></th>
+                    <th class="text-right-custom"></th>
+                    <th class="text-right-custom"></th>
+                    <th class="text-right-custom"></th>
+                    <th class="text-right-custom"></th>
+                    <th class="text-right-custom text-white" style="background-color: #00B050;"></th>
+                    <th class="text-right-custom"></th>
+                    <th class="text-right-custom"></th>
+                    <th class="text-right-custom"></th>
+                    <th class="text-right-custom"></th>
+                    <th class="text-right-custom"></th>
+                    <th class="text-right-custom"></th>
+                    <th class="text-right-custom text-white" style="background-color: #00B050;"></th>
+                    <th class="text-right-custom text-white" style="background-color: #A5A5A5;"></th>
+                    <th class="text-right-custom text-white" style="background-color: #00B050;"></th>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% include 'layout/details-modal.html' %}
+        {% include 'layout/societe-modal.html' %}
     </div>
 
 {% endblock %}
-
-
 {% block script %}
-    <script src="{% static 'autre/bootstrap/4.1.3/js/bootstrap.min.js' %}"></script>
-    <script src="{% static 'autre/clipboard.js/2.0.8/clipboard.min.js' %}"></script>
-    <!-- Inclure la bibliothèque moment.js -->
-    <script src="{% static 'autre/moment.js/2.29.1/moment.min.js' %}"></script>
-    <script src="{% static 'autre/moment-timezone/0.5.33/moment-timezone.min.js' %}"></script>
     <script>
-    $(function() {
-        // Sélectionnez l'élément li avec la classe multiselect-item qui contient une checkbox avec le titre " --- "
-        let liElement = $('ul.multiselect-container li.multiselect-item label.checkbox[title="Select all"]').closest('li');
+        let toolbar = document.createElement('div');
+        toolbar.innerHTML = `
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-auto">
+                        <div class="input-group">
+                            <button type="button" data-bs-toggle="modal" data-bs-target="#societeModal"
+                                    class="btn btn-outline-primary  {% if not user.is_staff %}disabled{% endif %}">
+                                <i class="fa fa-building"></i>
+                            </button>
+                        </div>
+                    </div>
 
-        // Supprimez l'élément li du DOM
-        liElement.remove();
-    });
-    $(document).ready(function () {
+                    <div class="col-auto">
+                        <div class="input-group">
+                            <label for="{{ form.societe.id_for_label }}"
+                                   class="input-group-text">Société</label>
+                            {{ form.societe }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <div class="input-group">
+                        <label for="{{ form.filtre.id_for_label }}"
+                                   class="input-group-text">Dépôts</label>
+                            {{ form.filtre }}
+                        </div>
+                    </div>
+                    {% if user.is_staff %}
+                        <div class="col-auto">
+                            <div class="input-group">
+                                <button type="button" onclick="reloadPage()"
+                                        class="btn btn-outline-warning">
+                                    <i class="fa fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
 
-
-        let filtre = $('#id_filtre')
-        filtre.multiselect({
-            enableFiltering: true,
-            enableFullValueFiltering: true,
-            includeSelectAllOption: true,
-            maxHeight: 400,
-            maxWidth: 200,
-            dropRight: true
-        });
-
-        $('#id_societe').change(function () {
-            {#let societeValue = $(this).val();#}
-            {#console.log(societeValue)#}
-            let select_nombres = $('#id_filtre');
-
-            // Get the values to clear (all except empty value and 'Tous')
-            let valuesToClear = select_nombres.val();
-            valuesToClear = valuesToClear.filter(value => value !== 'multiselect-all');
-
-            // Deselect the values
-            select_nombres.multiselect('deselect', valuesToClear);
-
-            // Select the options with empty value and 'Tous'
-            select_nombres.multiselect('select', 'multiselect-all');
-
-            {#let titlesToKeep = ['multiselect-all', '---']; // Add titles of items you want to keep#}
-            {#let itemsToKeep = [];#}
-
-            // Find list items in the dropdown and keep those with specified titles
-            $('.multiselect-container li').each(function() {
-                let listItem = $(this);
-                let title = listItem.find('label.checkbox').attr('title');
-            });
-
-            // Remove all list items
-            $('.multiselect-container li').remove();
-
-            // Append the items to keep back to the dropdown
-            {#$('.multiselect-container').append(itemsToKeep);#}
-
-            // Refresh the dropdown to reflect changes
-            select_nombres.multiselect('refresh');
-
-        });
-});
-    let table;
-
-    function reloadPage() {
-        location.reload();
-    }
-
-    const checkboxes_societe = $('.societe-checkbox');
-
-    function estNombre(chaine) {
-        // Expression régulière pour vérifier si la chaîne est un nombre en français ou en anglais
-        const regexNombre = /^-?\d{1,3}([ ,]\d{3})*([.,]\d+)?$/;
-        return regexNombre.test(chaine);
-    }
-
-    function convertir(chaine) {
-        let occurrences = chaine.toString().match(/,/g);
-            if (!occurrences) {
-            return 0;
-        }
-
-        try {
-            // Supprime les espaces (y compris les entités HTML &nbsp;) et remplace la virgule par un point dans la partie entière
-            let chaineSansEspaces = chaine.toString().replace(/(&nbsp;|\s)/g, '');
-            let chaineAvecPointDecimal;
-            if (estNombre(chaine.toString()) && chaineSansEspaces !== '0,00'){
-                chaineAvecPointDecimal = chaineSansEspaces.replace(/,/g, '');
-            }else{
-                chaineAvecPointDecimal = chaineSansEspaces.replace(/,/g, '.');
-
-            }
-
-            // Convertit en nombre flottant
-            let nombreFlottant = parseFloat(chaineAvecPointDecimal);
-
-            // Retourne le nombre flottant ou 0 si la conversion échoue
-            {#console.log(estNombre(chaine.toString()), chaine, "=> ", chaineSansEspaces, "=>", chaineAvecPointDecimal, "=>", nombreFlottant);#}
-
-            return isNaN(nombreFlottant) ? 0 : nombreFlottant;
-        } catch (e) {
-            console.log(`Erreur : ${e}`);
-            return 0;
-        }
-    }
-
-
-    $('document').ready(function () {
-            new ClipboardJS('.copy-icon');
-            $('#cellDetailsModal').on('show.bs.modal', function () {
-                let countdownSeconds = 10;
-
-                // Update modal title with countdown
-                let titleElement = $('#cellDetailsModalLabel');
-                let countdownInterval = setInterval(function () {
-                    titleElement.text('Chargement des données ... ' + ' (' + countdownSeconds + 's)');
-                    countdownSeconds--;
-
-                    // When countdown reaches 0, show checkmark icon
-                    if (countdownSeconds < 0) {
-                        titleElement.html('Chargement Terminer <i class="fas fa-check text-success"></i>');
-                        clearInterval(countdownInterval);
+                    <div class="col-auto">
+                        <div class="input-group">
+                            <label for="{{ form.debut.id_for_label }}"
+                                   class="input-group-text">Début</label>
+                            {{ form.debut }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <div class="input-group">
+                            <label for="{{ form.fin.id_for_label }}" class="input-group-text">Fin</label>
+                            {{ form.fin }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-outline-success"><i
+                                class="fas fa-search"></i>
+                        </button>
+                        <button type="reset" class="btn btn-outline-danger"><i
+                                class="fas fa-backspace"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        `;
+        new DataTable('#tableInventaire', {
+            paging: false,
+            info: false,
+            scrollCollapse: true,
+            scrollX: true,
+            scrollY: '60vh',
+            layout: {
+                topStart: [toolbar],
+                topEnd: {
+                    search: {
+                        placeholder: 'Chercher Ici'
                     }
-                }, 1000);
-            });
-
-            checkboxes_societe.on('change', function () {
-                const checkbox = $(this);
-                const field = checkbox.attr('name');
-                const societeId = checkbox.data('societe-id');
-                const checked = checkbox.prop('checked');
-
-                // Envoyer les données au backend via AJAX
-                $.ajax({
-                    url: '{% url 'app:update_societe_field' %}',  // Remplacez par l'URL de votre vue de mise à jour
-                    method: 'POST',
-                    data: {
-                        societe_id: societeId,
-                        field: field,
-                        checked: checked
-                    },
-                    success: function (response) {
-                        // Gérer la réponse si nécessaire
-                        {#console.log(response);#}
-                    },
-                    error: function (error) {
-                        // Gérer les erreurs si nécessaire
-                        console.error(error);
-                    }
-                });
-            });
-            $('#societeTable').DataTable({
-                "pageLength": 7,
-                "lengthMenu": [[7, 10, 15, 25, 50, 100], [7, 10, 15, 25, 50, 100]],
-                'stateSave': true,
-            });
-            let dataTable = $('#data-table').DataTable({
-                scrollX: true,
-                scrollY: "600px",
-                paging: false,
-                info: false,
-                border: true,
-                scrollCollapse: true,
-                deferRender: true,
-                retrieve: true,
-                autoWidth: false,
-                responsive: true,
-                dom: 'Bfrtip',
-                lengthChange: false,
-                buttons: [
-                    {
-                        extend: 'print',
-                        className: 'btn btn-primary bg-primary',
-                        titleAttr: 'Print',
-                        text: '<i class="fas fa-print text-light"></i>',
-                        footer: true
-                    },
-                    {
-                        extend: 'excel',
-                        className: 'btn btn-success bg-success',
-                        titleAttr: 'Export to Excel',
-                        text: '<i class="fas fa-file-excel text-light"></i>',
-                        exportOptions: {
-                            columns: ':visible',
-                            modifier: {
-                                page: 'all',
-                                search: 'applied',
-                                order: 'applied'
-                            }
-                        },
-                        sheetName: '{{ form.debut.value }} au {{ form.fin.value }}',
-                        title: function () {
-                            // Customize the sheet name here
-                            const currentDate = new Date();
-                            const formattedDate = currentDate.toLocaleString('fr-FR', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                                hour: 'numeric',
-                                minute: 'numeric',
-                                second: 'numeric',
-                                timeZoneName: 'short'
-                            });
-                            return `Flash Stock {{ form.societe.value }}, Générer le ${formattedDate}`;
-                        }
-                    },
-                    {
-                        extend: 'pdf',
-                        className: 'btn btn-danger bg-danger',
-                        titleAttr: 'Export to PDF',
-                        text: '<i class="fas fa-file-pdf text-light"></i>',
-                        footer: true,
-                        exportOptions: {
-                            columns: ':visible',
-                            modifier: {
-                                page: 'all',
-                                search: 'applied',
-                                order: 'applied'
-                            }
-                        },
-                        orientation: 'landscape',
-                        customize: function (doc) {
-                            const currentDate = new Date();
-                            const formattedDate = currentDate.toLocaleString('fr-FR', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                                hour: 'numeric',
-                                minute: 'numeric',
-                                second: 'numeric',
-                                timeZoneName: 'short'
-                            });
-
-                            doc.content.unshift({
-                                table: {
-                                    widths: ['*'],
-                                    body: [
-                                        [{
-                                            text: `Générer le ${formattedDate}, Flash Stock du {{ form.debut.value }} au {{ form.fin.value }}`,
-                                            alignment: 'center'
-                                        }]
-                                    ]
-                                },
-                                layout: 'Borders',
-                                margin: [0, 0, 0, 12], // Adjust margin as needed
-                            });
-                            // Adjust the font size for the content
-                            doc.defaultStyle.fontSize = 5; // Set the desired font size
-                            // Adjust the font size for the header
-                            doc.styles.tableHeader.fontSize = 5; // Set the desired header font size
-                            doc.styles.tableFooter.fontSize = 5; // Set the desired header font size
-
-                        }
-                    },
-                    {
-                        extend: 'colvis',
-                        className: 'btn btn-outline-secondary bg-secondary',
-                        titleAttr: 'Column Visibility',
-                        text: '<i class="fas fa-columns text-light"></i>',
-                    },
-                ],
-                fixedColumns: {
-                    left: 3,
-                    right: 3
-                },
-                columnDefs: [{
-                    targets: "datatable-nosort",
-                    orderable: false,
-                }],
-
-                footerCallback: function () {
-                    let api = this.api();
-
-                    // array to store totals for each column
-                    let columnTotals = [];
-
-                    // iterate over columns (assuming your columns start from index 1)
-                    for (let i = 1; i < api.columns().data().length; i++) {
-                        columnTotals[i] = api
-                            .column(i)
-                            .data()
-                            .reduce(function (acc, value) {
-                                if (value !== null && value !== undefined && value !== "") {
-                                    return acc + convertir(value);
-                                } else {
-                                    return acc;
-                                }
-                            }, 0);
-                        $(api.column(i).footer()).html(columnTotals[i].toLocaleString('fr-fr', { minimumFractionDigits: 2 }));
-                    }
-
-                    // You can add a total row at the end if needed
-                    $(api.column(0).footer()).html('Totaux');
-                },
-                drawCallback: function () {
-                    // Initialize DataTable outside the drawCallback
-                    if (table) {
-                        table.destroy();
-                    }
-                    table = $('#responseTable').DataTable({
-                        scrollX: true,
-                        scrollY: "300px",
-                        paging: false,
-                        info: false,
-                        border: true,
-                        scrollCollapse: true,
-                        autoWidth: true,
-                        responsive: true,
-                        dom: 'Bfrtip',
-                        lengthChange: false,
-                        scroller: true,
-                        fixedColumns: {
-                            left: 1,
-                            right: 3
-                        },
-                        fixedHeader: {
-                            header: false,
-                            footer: true
-                        },
-                        {#processing: true,#}
-                        columns: [
-                            {'data': 'do_piece'},
-                            {'data': 'do_date'},
-                            {'data': 'ar_ref'},
-                            {'data': 'dl_design'},
-                            {'data': 'dl_qte'},
-                            {'data': 'dl_prixRU'},
-                            {'data': 'dl_prixTotal'},
-                        ],
-                        columnDefs: [
-                            {
-                                targets: [4, 5, 6],
-                                className: 'dt-body-right',
-                            },
-
-
-                        ],
-                        buttons: [
-                            {
-                                extend: 'print',
-                                className: 'btn btn-primary bg-primary',
-                                titleAttr: 'Print',
-                                text: '<i class="fas fa-print text-light"></i>',
-                                footer: true
-                            },
-                            {
-                                extend: 'excel',
-                                className: 'btn btn-success bg-success',
-                                titleAttr: 'Export to Excel',
-                                text: '<i class="fas fa-file-excel text-light"></i>',
-                                exportOptions: {
-                                    columns: ':visible',
-                                    modifier: {
-                                        page: 'all',
-                                        search: 'applied',
-                                        order: 'applied'
-                                    }
-                                },
-                                sheetName: '{{ form.debut.value }} au {{ form.fin.value }}',
-                                title: function () {
-                                    // Customize the sheet name here
-                                    const currentDate = new Date();
-                                    const formattedDate = currentDate.toLocaleString('fr-FR', {
-                                        weekday: 'long',
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric',
-                                        hour: 'numeric',
-                                        minute: 'numeric',
-                                        second: 'numeric',
-                                        timeZoneName: 'short'
-                                    });
-                                    return `Flash Stock {{ form.societe.value }}, Générer le ${formattedDate}`;
-                                }
-                            },
-                            {
-                                extend: 'pdf',
-                                className: 'btn btn-danger bg-danger',
-                                titleAttr: 'Export to PDF',
-                                text: '<i class="fas fa-file-pdf text-light"></i>',
-                                footer: true,
-                                exportOptions: {
-                                    columns: ':visible',
-                                    modifier: {
-                                        page: 'all',
-                                        search: 'applied',
-                                        order: 'applied'
-                                    }
-                                },
-                                orientation: 'landscape',
-                                customize: function (doc) {
-                                    const currentDate = new Date();
-                                    const formattedDate = currentDate.toLocaleString('fr-FR', {
-                                        weekday: 'long',
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric',
-                                        hour: 'numeric',
-                                        minute: 'numeric',
-                                        second: 'numeric',
-                                        timeZoneName: 'short'
-                                    });
-
-                                    doc.content.unshift({
-                                        table: {
-                                            widths: ['*'],
-                                            body: [
-                                                [{
-                                                    text: `Générer le ${formattedDate}, Flash Stock {{ form.societe_choices.value }}, détaillé d'une famille du {{ form.debut.value }} au {{ form.fin.value }}`,
-                                                    alignment: 'center'
-                                                }]
-                                            ]
-                                        },
-                                        layout: 'Borders',
-                                        margin: [0, 0, 0, 12], // Adjust margin as needed
-                                    });
-                                    // Adjust the font size for the content
-                                    doc.defaultStyle.fontSize = 5.5; // Set the desired font size
-                                    // Adjust the font size for the header
-                                    doc.styles.tableHeader.fontSize = 5.5; // Set the desired header font size
-                                    doc.styles.tableFooter.fontSize = 5.5; // Set the desired header font size
-
-                                }
-                            },
-                            {
-                                extend: 'colvis',
-                                className: 'btn btn-outline-secondary bg-secondary',
-                                titleAttr: 'Column Visibility',
-                                text: '<i class="fas fa-columns text-light"></i>',
-                            },
-                        ],
-                        footerCallback: function (response) {
-                            let api = this.api();
-
-                            // Remove the formatting to get integer data for summation
-                            let intVal = function (i) {
-                                return typeof i === 'string'
-                                    ? i.replace(/[\$,]/g, '') * 1
-                                    : typeof i === 'number'
-                                        ? i
-                                        : 0;
-                            };
-
-
-                            // Total over this page
-                            let pageTotal = api
-                                .column(6, {page: 'current'})
-                                .data()
-                                .reduce((a, b) => intVal(a) + intVal(b), 0);
-
-
-                            api.column(2).footer().innerHTML = parseFloat(pageTotal).toLocaleString('en-US');
-
-                        }
-                    });
-
-                    $('#data-table tbody td').on('click', function () {
-                        // Get the content of the clicked cell
-                        let cellContent = $(this).text();
-                        {#console.log(cellContent)#}
-
-                        // Get the column index of the clicked cell
-                        let columnIndex = $(this).index();
-
-                        // Get the row index of the clicked cell
-                        let rowIndex = $(this).closest('tr').index();
-                        let firstCellContent = $(`#data-table tbody tr:eq(${rowIndex}) td:first`).text();
-
-                        // Get the selected values for Société, Début, and Fin
-                        let selectedSociete = $('#id_societe').val();
-                        let selectedDebut = $('#id_debut').val();
-                        let selectedFin = $('#id_fin').val();
-                        let filtreFin = $('#id_filtre').val();
-
-                        let req = {
-                            csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
-                            columnIndex: columnIndex,
-                            rowIndex: rowIndex,
-                            cellContent: cellContent,
-                            firstCellContent: firstCellContent,
-                            societe: selectedSociete,
-                            debut: selectedDebut,
-                            fin: selectedFin,
-                            filtre: filtreFin
-                        };
-                        if (columnIndex !== 0 && columnIndex !== 1 && columnIndex !== 6 && columnIndex !== 10 && columnIndex !== 13 && columnIndex !== 17 && columnIndex !== 18) {
-                            $('#cellDetailsModal').modal('show');
-
-                            $.ajax({
-                                url: '{% url "app:cell_details_view" %}',
-                                method: 'POST',
-                                data: req,
-                                dataType: 'json',
-                                success: function (response) {
-                                    // Update DataTable data with the response
-                                    table.clear()
-                                    setTimeout(function () {
-                                        table.rows.add(response.data);
-                                        // Adjust the column widths
-                                        table.columns.adjust();
-
-                                        // Redessiner la table
-                                        table.draw();
-                                    }, 10000); // 5000 millisecondes (5 secondes)
-
-                                },
-                                error: function (error) {
-                                    console.error('Error fetching data:', error);
-                                }
-                            });
-
-                            // Ajuster à nouveau les colonnes et redessiner la table (peut être facultatif)
-                            table.columns.adjust().draw();
-                        }
-
-
-                    });
-                },
-            });
-
-            dataTable.buttons().container()
-                .appendTo('#example_wrapper .col-md-6:eq(0)');
-
-            let tables = $('.select-row').DataTable();
-            $('.select-row tbody').on('click', 'tr', function () {
-                if ($(this).hasClass('selected')) {
-                    $(this).removeClass('selected');
-                } else {
-                    tables.$('tr.selected').removeClass('selected');
-                    $(this).addClass('selected');
                 }
-            });
-
-            dataTable.on('mouseenter', 'td', function () {
-            let colIdx = dataTable.cell(this).index().column;
-
-            dataTable
-                .cells()
-                .nodes()
-                .each((el) => el.classList.remove('highlight'));
-
-            dataTable
-                .column(colIdx)
-                .nodes()
-                .each((el) => el.classList.add('highlight'));
-        });
-
-        });
+            },
+            columnDefs: [
+                {targets: 0, orderable: false}
+            ],
+            order: [[1, 'asc']],
+            fixedColumns: {
+                start: 4,
+                end: 3
+            },
+        })
     </script>
 {% endblock %}
-

@@ -1,21 +1,4 @@
-/* Variables */
-:root {
-    --bg: #fff;
-    --text: #7288a2;
-    --gray: #4d5974;
-    --lightgray: #e5e5e5;
-    --blue: #03b5d2;
-}
 
-/* Global Styles */
-* {
-    box-sizing: border-box;
-}
-
-*::before,
-*::after {
-    box-sizing: border-box;
-}
 
 .nav-tabs {
     color: #000; /* Couleur de fond pour les onglets */

@@ -11,9 +11,8 @@
     <link rel="icon" type="image/ico" sizes="16x16" href="{% static 'assets/images/logo-inviso.ico' %}">
     {% fontawesome_6_static %}
     <link rel="stylesheet" href="{% static 'assets/css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'assets/app/client.css' %}">
-    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
-
+{#        <link rel="stylesheet" href="{% static 'assets/app/client.css' %}">#}
+{#    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">#}
     <link rel="stylesheet" href="{% static 'dist/css/dataTables.dataTables.css' %}">
     <link rel="stylesheet" href="{% static 'dist/css/fixedColumns.dataTables.css' %}">
     <link rel="stylesheet" href="{% static 'dist/css/buttons.dataTables.css' %}">
@@ -35,9 +34,27 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
+        /* Variables */
+        :root {
+            --bg: #fff;
+            --text: #7288a2;
+            --gray: #4d5974;
+            --lightgray: #e5e5e5;
+            --blue: #03b5d2;
+        }
+
+        /* Global Styles */
+        * {
+            box-sizing: border-box;
+        }
+
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
         html, body {
-            height: 100%;
-            padding: 0;
+        {#height: 100vh;#} padding: 0;
             margin: 0;
         }
     </style>
@@ -49,9 +66,7 @@
 <script src="{% static 'dist/js/popper.min.js' %}"></script>
 <script src="{% static 'assets/js/bootstrap.min.js' %}"></script>
 <script src="{% static 'assets/js/moment.min.js' %}"></script>
-
 <script src="{% static 'dist/js/dataTables.js' %}"></script>
-<script src=""></script>
 <script src="{% static 'assets/js/datatable/dataTables.bootstrap4.min.js' %}"></script>
 <script src="{% static 'dist/js/dataTables.fixedColumns.js' %}"></script>
 <script src="{% static 'dist/js/fixedColumns.dataTables.js' %}"></script>

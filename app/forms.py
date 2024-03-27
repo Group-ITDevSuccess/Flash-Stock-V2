@@ -21,7 +21,7 @@ class SearchForm(forms.Form):
         label='Depot',
         widget=forms.SelectMultiple(
             attrs={
-                'class': 'form-select form-select-sm w-100',
+                'class': 'selectpicker me-2',
                 'multiselect-search': 'true',
                 'data-live-search': 'true',
                 'multiple': 'multiple',
@@ -44,7 +44,7 @@ class SearchForm(forms.Form):
         self.fields['societe'] = forms.ChoiceField(
             choices=societe_choices,
             label='Société',
-            widget=forms.Select(attrs={'class': 'form-select'})
+            widget=forms.Select(attrs={'class': 'selectpicker me-2'})
         )
 
         societe_name = self.data.get('societe')
