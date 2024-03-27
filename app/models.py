@@ -25,7 +25,7 @@ class Societe(models.Model):
     name = models.CharField(max_length=150, unique=True)
     value = models.CharField(max_length=150)
     active = models.BooleanField(default=False)
-    base = models.CharField(max_length=150)
+    base = models.CharField(max_length=150, blank=True, null=True)
     connexion = models.ForeignKey(Connexion, on_delete=models.CASCADE, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

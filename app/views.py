@@ -1,3 +1,5 @@
+import json
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -7,79 +9,87 @@ from django.views.decorators.csrf import csrf_exempt
 from app.forms import SearchForm
 from app.models import Societe
 from guard.models import CustomUser
-from utils.script import get_choix, check_base, write_log, get_cell_data
+from utils.script import get_choix, check_base, write_log, get_cell_data, are_valid_uuids, get_all_filter, \
+    get_sql
 
 
-def get_data_from_form(form):
-    data = None
-    name = None
-    debut = None
-    fin = None
-    if form.is_valid():
-        name = form.cleaned_data['societe']
-        debut = form.cleaned_data.get('debut').strftime("%m/%d/%Y")
-        fin = form.cleaned_data.get('fin').strftime("%m/%d/%Y")
-        filter_values = form.cleaned_data['filtre']
+def get_data_from_form(societe, debut, fin, filter_values):
+    datas = []
+    check = check_base(server=societe.connexion.server, name=societe.value, value=societe.base,
+                       username=societe.connexion.login, password=societe.connexion.password)
 
-        if filter_values not in ['', None] and len(filter_values) == 0:
-            data = get_choix(societe=name, where=True)
-            if data is not None:
-                data = [str(value) for value in data]
-                data = ','.join(data)
-        else:
-            filter_values = filter(lambda x: x != '', filter_values)
-            data = [str(value) for value in filter_values]
-            data = ','.join(data)
-    return name, debut, fin, data
+    return datas
 
 
 @login_required
 # Create your views here.
 def get(request):
     datas = []
-    name = "Home"
+    uid = None
+    societe = None
+    begin = None
+    end = None
+    filters = []
+
     if request.method == 'GET':
         form = SearchForm(request.GET)
-
     else:
         form = SearchForm(request.POST)
-        name, debut, fin, data = get_data_from_form(form)
-        if data:
-            societe = Societe.objects.get(name__exact=name, active__exact=True)
-            if societe:
-                from utils.script import get_all_data
-                check = check_base(server=societe.connexion.server, name=societe.value, value=societe.base,
-                                   username=societe.connexion.login, password=societe.connexion.password)
-                if check is not None:
-                    gets = get_all_data(
-                        categories=societe.connexion.types,
-                        conn=check,
-                        debut=debut,
-                        fin=fin,
-                        filtre=data
-                    )
-                    datas = gets[1]
-                    check.close()
-                    if not gets[0]:
-                        messages.warning(request, "Erreur sur le choix de serveur ou la base n'a pas de donnée!")
-                        write_log("Erreur sur le choix de serveur ou la base n'a pas de donnée!")
-                else:
-                    messages.error(request,
-                                   f"Le serveur \"{societe.connexion.server}\" de la base \" {societe.value} \" n'est pas accessible !")
-            else:
-                messages.error(request, "Base Introuvable !")
+        if form.is_valid():
+            societe = form.cleaned_data['societe']
+            begin = form.cleaned_data.get('debut').strftime("%m/%d/%Y")
+            end = form.cleaned_data.get('fin').strftime("%m/%d/%Y")
+
+            if societe is not None:
+                item = Societe.objects.get(name__exact=societe)
+                if item:
+                    try:
+                        conn = check_base(
+                            server=item.connexion.server,
+                            name=item.name,
+                            value=item.value,
+                            username=item.connexion.login,
+                            password=item.connexion.password,
+                        )
+                        data = get_choix(conn=conn)
+                        filters = data
+                        print(filters)
+                    except Exception as e:
+                        write_log(str(e))
+                        pass
+                uid = item.pk
         else:
-            messages.warning(request, "Formulaires n'est pas valide !")
-    # print(form)
+            print(f"Formulaire est invalide : {str(form.errors)}")
     context = {
         'datas': datas,
         'form': form,
-        'name': name,
-        'societes': Societe.objects.all().order_by('name'),
+        'uid': uid,
+        'societe': societe,
+        'begin': begin,
+        'end': end,
+        'filters': filters,
         'path': request.path,
         'users_gets': CustomUser.objects.all(),
     }
     return render(request, 'app/get.html', context)
+
+
+@login_required
+@csrf_exempt
+def get_inventory_ajax(request):
+    datas = []
+    print(request.POST)
+    # data = json.loads(request.body)
+    # print(f"POST : {data} ")
+    uid = are_valid_uuids(request.POST.get('uid'))
+    begin = request.POST.get('begin')
+    end = request.POST.get('end')
+    filters = request.POST.getlist('filters')
+
+    if None not in (begin, end, uid) and filters != '':
+        societe = Societe.objects.get(uid__exact=uid)
+        datas = get_data_from_form(societe=societe, debut=begin, fin=end, filter_values=filters)
+    return JsonResponse({'data': datas})
 
 
 @login_required
@@ -166,15 +176,15 @@ def cell_details_view(request):
         debut = request.POST.get('debut', None)
         fin = request.POST.get('fin', None)
         filtre = request.POST.getlist('filtre[]', None)
-        if filtre == [] or filtre == [''] or filtre is None:
-            data = get_choix(societe=value, where=True)
-            if data is not None:
-                data = [str(value) for value in data]
-                data = ','.join(data)
-        else:
-            filtre = filter(lambda x: x != '', filtre)
-            data = [str(value) for value in filtre]
-            data = ','.join(data)
+        # if filtre == [] or filtre == [''] or filtre is None:
+        #     data = get_choix(societe=value, where=True)
+        #     if data is not None:
+        #         data = [str(value) for value in data]
+        #         data = ','.join(data)
+        # else:
+        #     filtre = filter(lambda x: x != '', filtre)
+        #     data = [str(value) for value in filtre]
+        #     data = ','.join(data)
         datas = []
         societe = Societe.objects.filter(name__exact=value, active__exact=True).first()
         check = check_base(server=societe.connexion.server, name=societe.value, value=societe.base,
@@ -186,7 +196,7 @@ def cell_details_view(request):
                 debut=debut,
                 fin=fin,
                 column=column_index,
-                filtre=data
+                filtre=filtre
             )
             check.close()
 

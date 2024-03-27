@@ -11,8 +11,8 @@
     <link rel="icon" type="image/ico" sizes="16x16" href="{% static 'assets/images/logo-inviso.ico' %}">
     {% fontawesome_6_static %}
     <link rel="stylesheet" href="{% static 'assets/css/bootstrap.min.css' %}">
-{#        <link rel="stylesheet" href="{% static 'assets/app/client.css' %}">#}
-{#    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">#}
+    {#    <link rel="stylesheet" href="{% static 'assets/app/client.css' %}">#}
+    {#    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">#}
     <link rel="stylesheet" href="{% static 'dist/css/dataTables.dataTables.css' %}">
     <link rel="stylesheet" href="{% static 'dist/css/fixedColumns.dataTables.css' %}">
     <link rel="stylesheet" href="{% static 'dist/css/buttons.dataTables.css' %}">
@@ -54,13 +54,14 @@
         }
 
         html, body {
-        {#height: 100vh;#} padding: 0;
+            padding: 0;
             margin: 0;
         }
     </style>
     {% block style %}{% endblock %}
 </head>
 <body>
+{% include 'partials/_navbar.html' %}
 {% block content %}{% endblock %}
 <script src="{% static 'assets/js/jquery.min.js' %}"></script>
 <script src="{% static 'dist/js/popper.min.js' %}"></script>

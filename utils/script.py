@@ -1,3 +1,5 @@
+import uuid
+
 import pandas as pd
 import pyodbc
 import os
@@ -10,6 +12,7 @@ from ldap3.core.exceptions import LDAPException
 from ldap3 import Server, Connection
 from datetime import datetime
 
+from app.models import Societe
 
 today = datetime.today().strftime('%d-%m-%Y')
 
@@ -32,6 +35,80 @@ def check_base(server, name, value, username, password):
         print("===============================")
         write_log(f"Erreur de connexion : {str(e)}")
         return conn
+
+
+def extract_from_path(path):
+    segments = path.lstrip('/').split('/')
+
+    if len(segments) >= 3:
+        base = segments[0]
+        query = segments[1]
+        table = segments[2]
+
+        return base, query, table
+    else:
+        return None
+
+
+def get_sql_in_json(chemin_fichier):
+    try:
+        with open(chemin_fichier, 'r') as fichier:
+            contenu_json = json.load(fichier)
+            return contenu_json
+    except FileNotFoundError:
+        print(f"Le fichier {chemin_fichier} n'a pas été trouvé.")
+    except json.JSONDecodeError as e:
+        print(f"Erreur lors de la lecture du fichier JSON : {e}")
+    except Exception as e:
+        print(f"Une erreur s'est produite : {e}")
+
+
+def get_sql(path):
+    base, query, value = extract_from_path(path)
+
+    file = os.path.join(settings.BASE_DIR, 'sql.json')
+    contenu = get_sql_in_json(file)
+    valeur = None
+    if contenu is not None:
+        try:
+            valeur = contenu[base][query][value]
+        except KeyError as e:
+            print(f"La clé {e} n'a pas été trouvée dans le fichier JSON.")
+        except TypeError as e:
+            print(f"Erreur de type : {e}")
+
+    return valeur
+
+
+def get_all_filter(conn, societe, sql):
+    code_choices = []
+    try:
+        cursor = conn.cursor()
+        sql = str(sql).replace('<value>', societe.value)
+        # print("===============================")
+        # print(f"SQL : {sql} ")
+        # print("===============================")
+        cursor.execute(sql)
+
+        # Récupération des résultats
+        rows = cursor.fetchall()
+        if rows:
+            rows = [tuple(row) for row in rows]
+            if all(isinstance(row, tuple) for row in rows):
+                df = pd.DataFrame(rows, columns=['CODE', 'SOCIETE'])
+                grouped_options = df.groupby('SOCIETE')['CODE'].apply(lambda x: list(zip(x, x))).reset_index()
+                for _, group in grouped_options.iterrows():
+                    code_choices.append((group['SOCIETE'], group['CODE']))
+        cursor.close()
+        conn.close()
+
+    except pyodbc.Error as e:
+        print("Erreur lors de la connexion à la base de données:", str(e))
+        # write_log(str(e))
+    except Exception as e:
+        write_log(f"{str(e)}")
+        pass
+    return code_choices
 
 
 # Définition de la fonction pour rechercher les attributs LDAP d'un utilisateur
@@ -158,29 +235,15 @@ def execute(data, categories, value, intitule, debut, fin, conn, filtre):
     return gest
 
 
-def get_choix(societe, where=None):
+def get_choix(conn):
     dl_num = "SELECT DE_NO, DE_INTITULE FROM F_DEPOT"
 
-    societe = Societe.objects.filter(name__exact=societe, active__exact=True).first()
-    check = check_base(server=societe.connexion.server, name=societe.value, value=societe.base,
-                       username=societe.connexion.login, password=societe.connexion.password)
-    resul = get_data(sql=dl_num, conn=check, columns=['DE_NO', 'DE_INTITULE'])
-    # Récupérer tous les NUM de la colonne 'DE_NO'
-    choices = None
+    resul = get_data(sql=dl_num, conn=conn, columns=['DE_NO', 'DE_INTITULE'])
+    choices = []
     if resul is not None:
-        if where is None:
-            choices = []
-            if societe is not None:
-                resul = resul.to_dict(orient='records')
-                choices += []
-                choices += [(item['DE_NO'], item['DE_INTITULE']) for item in resul]
-            else:
-                choices += []
-        else:
-            # Récupérer toutes les valeurs de la colonne 'DE_NO'
-            choices = resul['DE_NO'].tolist()
-            # choices = ','.join(map(str, choices))
-            # print(','.join(map(str, choices)))
+        choices = resul.to_dict(orient='records')
+        # choices = [(item['DE_NO'], item['DE_INTITULE']) for item in resul]
+
     return choices
 
 
@@ -194,7 +257,6 @@ def get_all_data(categories, debut, fin, conn, filtre=None):
             sql = sql.replace('{in}', str(filtre))
 
             familles = get_data(sql=sql, conn=conn, columns=columns0)
-            # print(f"Famille : {familles}")
             if familles is not None:
                 for index, row in familles.iterrows():
                     value = row['FAMILLE']
@@ -269,3 +331,26 @@ def write_log(logs, level=None):
         logger.critical(logs)
     else:
         logger.exception(logs)
+
+
+def are_valid_uuids(values):
+    if values is ['', None]:
+        if isinstance(values, list):
+            uuids = []
+
+            for value in values:
+                try:
+                    uid = uuid.UUID(value)
+                    uuids.append(uid)
+                except ValueError:
+                    return None
+
+            return uuids
+        else:
+            try:
+                uid = uuid.UUID(values)
+                return uid
+            except ValueError:
+                return None
+    else:
+        return None

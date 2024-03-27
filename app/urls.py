@@ -10,4 +10,5 @@ urlpatterns = [
     path('update-societe-field/', views.update_societe_field, name='update_societe_field'),
     path('show-modal/', views.show_modal, name='show_modal'),
     path('cell-details/', views.cell_details_view, name='cell_details_view'),
+    path('get-inventory-ajax/', views.get_inventory_ajax, name='get_inventory_ajax'),
 ]

@@ -17,21 +17,6 @@ class SearchForm(forms.Form):
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
     )
 
-    filtre = forms.MultipleChoiceField(
-        label='Depot',
-        widget=forms.SelectMultiple(
-            attrs={
-                'class': 'selectpicker me-2',
-                'multiselect-search': 'true',
-                'data-live-search': 'true',
-                'multiple': 'multiple',
-                'data-live-search-placeholder': 'Search',
-                'tabindex': '-98'
-            }
-        ),
-        required=False
-    )
-
     def __init__(self, *args, **kwargs):
         super(SearchForm, self).__init__(*args, **kwargs)
 
@@ -47,12 +32,25 @@ class SearchForm(forms.Form):
             widget=forms.Select(attrs={'class': 'selectpicker me-2'})
         )
 
-        societe_name = self.data.get('societe')
 
-        if societe_name:
-            choices = get_choix(societe_name)
-            if choices is None:
-                choices = []
+class ChoiseForm(forms.Form):
+    filtre = forms.ChoiceField(
+        label='Depot',
+        widget=forms.Select(
+            attrs={
+                'class': 'selectpicker me-2 ',
+                'data-live-search': 'true',
+                'data-live-search-placeholder': 'Search',
+                'tabindex': '-98'
+            }
+        ),
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        choices = kwargs.pop('filter_choices', None)
+        if choices:
             self.fields['filtre'].choices = choices
 
 

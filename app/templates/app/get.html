@@ -102,95 +102,171 @@
         {% include 'layout/details-modal.html' %}
         {% include 'layout/societe-modal.html' %}
     </div>
-
+    <div class="dropdown-menu" aria-labelledby="inventoryFilterDropdown">
+        <a class="dropdown-item" href="#">Option A</a>
+        <a class="dropdown-item" href="#">Option B</a>
+        <a class="dropdown-item" href="#">Option C</a>
+    </div>
 {% endblock %}
 {% block script %}
     <script>
-        let toolbar = document.createElement('div');
-        toolbar.innerHTML = `
-            <form method="post">
-                {% csrf_token %}
-                <div class="row">
-                    <div class="col-auto">
-                        <div class="input-group">
-                            <button type="button" data-bs-toggle="modal" data-bs-target="#societeModal"
-                                    class="btn btn-outline-primary  {% if not user.is_staff %}disabled{% endif %}">
-                                <i class="fa fa-building"></i>
-                            </button>
-                        </div>
-                    </div>
+        function isNumber(chaine) {
+            const regexNumber = /^-?\d{1,3}([ ,]\d{3})*([.,]\d+)?$/;
+            return regexNumber.test(chaine);
+        }
 
-                    <div class="col-auto">
-                        <div class="input-group">
-                            <label for="{{ form.societe.id_for_label }}"
-                                   class="input-group-text">Société</label>
-                            {{ form.societe }}
-                        </div>
-                    </div>
-                    <div class="col-auto">
-                        <div class="input-group">
-                        <label for="{{ form.filtre.id_for_label }}"
-                                   class="input-group-text">Dépôts</label>
-                            {{ form.filtre }}
-                        </div>
-                    </div>
-                    {% if user.is_staff %}
-                        <div class="col-auto">
-                            <div class="input-group">
-                                <button type="button" onclick="reloadPage()"
-                                        class="btn btn-outline-warning">
-                                    <i class="fa fa-sync-alt"></i>
-                                </button>
-                            </div>
-                        </div>
-                    {% endif %}
+        function formatNumberToFr(chaine) {
+            try {
+                let chaineWithoutSpace = chaine.toString().replace(/(&nbsp;|\s)/g, '');
+                chaineWithoutSpace = chaineWithoutSpace.replace('%', '');
+                let chaineWithPointDecimal;
+                if (isNumber(chaine.toString()) && chaineWithoutSpace !== '0,00') {
+                    chaineWithPointDecimal = chaineWithoutSpace.replace(/,/g, '.');
+                } else {
+                    chaineWithPointDecimal = chaineWithoutSpace.replace(/,/g, '.');
 
-                    <div class="col-auto">
-                        <div class="input-group">
-                            <label for="{{ form.debut.id_for_label }}"
-                                   class="input-group-text">Début</label>
-                            {{ form.debut }}
-                        </div>
-                    </div>
-                    <div class="col-auto">
-                        <div class="input-group">
-                            <label for="{{ form.fin.id_for_label }}" class="input-group-text">Fin</label>
-                            {{ form.fin }}
-                        </div>
-                    </div>
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-outline-success"><i
-                                class="fas fa-search"></i>
-                        </button>
-                        <button type="reset" class="btn btn-outline-danger"><i
-                                class="fas fa-backspace"></i>
-                        </button>
-                    </div>
-                </div>
-            </form>
-        `;
-        new DataTable('#tableInventaire', {
-            paging: false,
-            info: false,
-            scrollCollapse: true,
-            scrollX: true,
-            scrollY: '60vh',
-            layout: {
-                topStart: [toolbar],
-                topEnd: {
-                    search: {
-                        placeholder: 'Chercher Ici'
-                    }
                 }
-            },
-            columnDefs: [
-                {targets: 0, orderable: false}
-            ],
-            order: [[1, 'asc']],
-            fixedColumns: {
-                start: 4,
-                end: 3
-            },
-        })
+
+                let numberFloat = parseFloat(chaineWithPointDecimal);
+                return isNaN(numberFloat) ? 0 : numberFloat;
+            } catch (e) {
+                console.log(`Error : ${e}`);
+                return 0;
+            }
+        }
+
+        $.fn.dataTable.ext.errMode = 'throw';
+
+        document.addEventListener('DOMContentLoaded', function () {
+            let dataTable = new DataTable('#tableInventaire', {
+                paging: false,
+                info: false,
+                scrollCollapse: true,
+                scrollX: true,
+                scrollY: '60vh',
+                fixedColumns: {
+                    start: 4,
+                    end: 3
+                },
+            })
+
+            function getdata(url, data) {
+                if (dataTable) {
+                    dataTable.destroy()
+                }
+                dataTable = new DataTable('#tableInventaire', {
+                    ajax: {
+                        url: url,
+                        dataSrc: 'data',
+                        type: 'POST',
+                        data: data
+                    },
+                    paging: false,
+                    info: false,
+                    scrollCollapse: true,
+                    scrollX: true,
+                    scrollY: '60vh',
+                    language: {
+                        search: '',
+                        decimal: ',',
+                        thousands: ' '
+                    },
+                    layout: {
+                        topStart: {
+                            buttons: [
+                                {
+                                    text: '<i class="fas fa-building"></i>',
+                                    className: 'bg-warning text-white',
+                                    attr: {
+                                        type: 'button',
+                                        'aria-controls': 'societeModal',
+                                        'data-bs-toggle': 'modal',
+                                        'data-bs-target': '#societeModal',
+                                    }
+                                },
+                                {
+                                    extend: 'excelHtml5',
+                                    text: '<i class="fas fa-file-excel"></i>',
+                                    className: 'bg-danger text-white'
+                                },
+                                {
+                                    extend: 'pdfHtml5',
+                                    text: '<i class="fas fa-print"></i>',
+                                    className: 'bg-success text-white'
+                                },
+                                {
+                                    text: 'Select'
+                                }
+                            ]
+                        },
+                        topEnd: [{
+                            search: {
+                                placeholder: 'Chercher Ici',
+                            }
+                        }]
+                    },
+                    columnDefs: [
+                        {targets: 0, orderable: false},
+                        {targets: [], className: 'text-right'},
+                        {targets: [], className: "cursor-pointer"},
+                    ],
+                    order: [[1, 'asc']],
+                    fixedColumns: {
+                        start: 4,
+                        end: 3
+                    },
+                    {#processing: true,#}
+                    deferRender: true,
+                    select: true,
+                    stateSave: true,
+                    createdRow: function (row, data, dataIndex) {
+                        $('td', row).eq(0).html(dataIndex + 1);
+                    },
+                    rowCallback: function (rows, data, start, end, display) {
+                        let api = this.api();
+                        let numColumns = api.columns().nodes().length;
+
+                        for (let i = 2; i < numColumns; i++) {
+                            let values;
+                            if ([].includes(i)) {
+                                try {
+                                    let total_sum = api.column(i, {page: 'current'}).data().reduce(function (a, b) {
+                                        return formatNumberToFr(a) + formatNumberToFr(b);
+                                    }, 0);
+                                    try {
+                                        values = parseFloat(total_sum).toLocaleString('fr-FR');
+
+                                    } catch (e) {
+                                        values = ''
+                                    }
+                                } catch (e) {
+                                    let footerElement = api.column(i).footer();
+                                    values = footerElement ? footerElement.innerHTML : '';
+                                }
+                                $(api.column(i).footer()).html(values);
+                            }
+
+                        }
+                    }
+                })
+            }
+
+            const form = document.getElementById('depotForm');
+            const submitButton = document.getElementById('submitButtonDepot');
+            submitButton.addEventListener('click', function (event) {
+                event.preventDefault();
+
+                const filtersSelect = document.getElementById('filtersSelect');
+                const selectedValue = filtersSelect.value;
+                let data = {
+                    uid: '{{ uid }}',
+                    filters: selectedValue,  // Use the updated filter value
+                    begin: '{{ begin }}',
+                    end: '{{ end }}',
+                };
+                getdata('{% url 'app:get_inventory_ajax' %}', data)
+
+            });
+        });
     </script>
 {% endblock %}
