@@ -174,25 +174,21 @@ def ldap_login_connection(username, password):
         return False
 
 
-def get_data(sql, conn, columns=None):
-    if columns is None:
-        columns = ["FAMILLE", "VALUE"]
+def get_data(sql, conn, columns):
     df = None
+    if sql is not None:
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(sql)
+                rows = cursor.fetchall()
 
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute(sql)
-            rows = cursor.fetchall()
-
-            if rows:
-                rows = [tuple(row) for row in rows]
-                if all(isinstance(row, tuple) for row in rows):
-                    df = pd.DataFrame(rows, columns=columns)
-        return df
-    except Exception as e:
-        write_log(f"Erreur execute_sql : {str(e)}")
-        print("Erreur")
-        return df
+                if rows:
+                    rows = [tuple(row) for row in rows]
+                    if all(isinstance(row, tuple) for row in rows):
+                        df = pd.DataFrame(rows, columns=columns)
+        except Exception as e:
+            write_log(f"Erreur execute_sql : {str(e)}")
+    return df
 
 
 def chercher(df, value):
@@ -247,14 +243,14 @@ def get_choix(conn):
     return choices
 
 
-def get_all_data(categories, debut, fin, conn, filtre=None):
+def get_all_famille(categories, debut, fin, conn, filtre):
     datas = []
-
+    filter = filtre[0]
     try:
         with open('datas.json', 'r') as file:
             json_file = json.load(file)
             sql = json_file['FAMILLE']
-            sql = sql.replace('{in}', str(filtre))
+            sql = sql.replace('{in}', str(filter))
 
             familles = get_data(sql=sql, conn=conn, columns=columns0)
             if familles is not None:
@@ -334,23 +330,20 @@ def write_log(logs, level=None):
 
 
 def are_valid_uuids(values):
-    if values is ['', None]:
-        if isinstance(values, list):
-            uuids = []
+    if isinstance(values, list):
+        uuids = []
 
-            for value in values:
-                try:
-                    uid = uuid.UUID(value)
-                    uuids.append(uid)
-                except ValueError:
-                    return None
-
-            return uuids
-        else:
+        for value in values:
             try:
-                uid = uuid.UUID(values)
-                return uid
+                uid = uuid.UUID(value)
+                uuids.append(uid)
             except ValueError:
                 return None
+
+        return uuids
     else:
-        return None
+        try:
+            uid = uuid.UUID(values)
+            return uid
+        except ValueError:
+            return None

@@ -10,13 +10,69 @@ from app.forms import SearchForm
 from app.models import Societe
 from guard.models import CustomUser
 from utils.script import get_choix, check_base, write_log, get_cell_data, are_valid_uuids, get_all_filter, \
-    get_sql
+    get_sql, get_data
 
 
 def get_data_from_form(societe, debut, fin, filter_values):
     datas = []
     check = check_base(server=societe.connexion.server, name=societe.value, value=societe.base,
                        username=societe.connexion.login, password=societe.connexion.password)
+    filter_values = ','.join(filter_values)
+    with open('data.json', 'r') as file:
+        try:
+            json_file = json.load(file)
+            sql = json_file['FAMILLE']
+            sql = sql.replace('{in}', str(filter_values))
+            query = json_file['COLUMN']
+        except Exception as e:
+            write_log(e)
+            sql = None
+            query = None
+
+        # print("=================================================")
+        # print(sql)
+        # print("=================================================")
+
+        gets = get_data(sql=sql, columns=["CATEGORY", "INTITULE"], conn=check)
+        where = {
+            '1': f"DL_MvtStock IN (1,3) and DL_DateBL<='{debut}'",
+            '2': f"do_domaine IN (0) and Dl_QTE < 0 and DL_DateBL between '{debut}' and '{fin}'",
+            '3': f"do_domaine IN (1) and DL_DateBL between '{debut}' and '{fin}'",
+            '4': f"do_type IN (40) and DL_DateBL between '{debut}' and '{fin}'",
+            '5': None,
+            '6': f"do_type IN (23) and dl_mvtstock=1 and DL_DateBL between '{debut}' and '{fin}'",
+            '7': f"do_type IN (20) and DO_PIECE not like'i00%' and DL_DateBL between '{debut}' and '{fin}'",
+            '8': f"do_type IN (20) and DO_PIECE like'i00%' and DL_DateBL between '{debut}' and '{fin}'",
+            '9': None,
+            '10': f"do_domaine IN (0) and Dl_QTE > 0 and DL_DateBL between '{debut}' and '{fin}'",
+            '11': f"do_type IN (41) and DL_DateBL between '{debut}' and '{fin}'",
+            '12': None,
+            '13': f"do_type IN (23) and dl_mvtstock=3 and DL_DateBL between '{debut}' and '{fin}'",
+            '14': f"do_type IN (21) and DO_PIECE not like'i00%' and DL_DateBL between '{debut}' and '{fin}'",
+            '15': f"do_type IN (21) and DO_PIECE like'i00%' and DL_DateBL between '{debut}' and '{fin}'",
+            '16': None,
+            '17': None,
+            '18': f"DL_MvtStock IN (1,3) and DL_DateBL<='{fin}'",
+        }
+        wheres = []
+        for key, value in where.items():
+            if value is not None:
+                query = query.replace('{where}', value).replace('{in}', filter_values)
+                val = get_data(sql=query, columns=["FAMILLE", "VALUE"], conn=check)
+                if val is not None:
+                    val = val.to_dict(orient='records')
+                else:
+                    val = []
+            else:
+                val = []
+            wheres.append({'key': key, 'value': val})
+        for index, row in gets.iterrows():
+            lines = {'CATEGORY': row['CATEGORY'], 'INTITULE': row['INTITULE']}
+            for i, j in where.items():
+                find_list = wheres[int(i) - 1]['value']
+                value = next((item['VALUE'] for item in find_list if item['FAMILLE'] == row['CATEGORY']), 0)
+                lines[str(int(i) - 1)] = value
+            datas.append(lines)
 
     return datas
 
@@ -53,7 +109,6 @@ def get(request):
                         )
                         data = get_choix(conn=conn)
                         filters = data
-                        print(filters)
                     except Exception as e:
                         write_log(str(e))
                         pass
@@ -78,18 +133,22 @@ def get(request):
 @csrf_exempt
 def get_inventory_ajax(request):
     datas = []
-    print(request.POST)
     # data = json.loads(request.body)
     # print(f"POST : {data} ")
     uid = are_valid_uuids(request.POST.get('uid'))
     begin = request.POST.get('begin')
     end = request.POST.get('end')
     filters = request.POST.getlist('filters')
-
     if None not in (begin, end, uid) and filters != '':
         societe = Societe.objects.get(uid__exact=uid)
         datas = get_data_from_form(societe=societe, debut=begin, fin=end, filter_values=filters)
-    return JsonResponse({'data': datas})
+    context = {
+        'datas': datas[0]
+    }
+    print(f"=================================================")
+    print(f"{context}")  # Corrected line
+    print("=======================================================")
+    return JsonResponse(context, safe=False)
 
 
 @login_required
