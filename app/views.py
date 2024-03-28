@@ -97,7 +97,7 @@ def get_inventory_ajax(request):
         gets = get_data(sql=sql, columns=["CATEGORY", "INTITULE"], conn=check)
         print(begin, end)
         if gets is not None and begin is not None and end is not None:
-            where = {
+            lists = {
                 'STK_INTIALE': f"DL_MvtStock IN (1,3) and DL_DateBL<='{begin}'",
                 'EN_RETOUR': f"do_domaine IN (0) and Dl_QTE < 0 and DL_DateBL between '{begin}' and '{end}'",
                 'EN_RECEP': f"do_domaine IN (1) and DL_DateBL between '{begin}' and '{end}'",
@@ -118,9 +118,9 @@ def get_inventory_ajax(request):
                 'STK_FINAL_SYS': f"DL_MvtStock IN (1,3) and DL_DateBL<='{end}'"
             }
             wheres = []
-            for key, value in where.items():
+            for key, value in lists.items():
                 if value is not None:
-                    query = query.replace('{where}', value).replace('{in}', filter_values)
+                    query = query.replace('{lists}', value).replace('{in}', filter_values)
                     val = get_data(sql=query, columns=["FAMILLE", "VALUE"], conn=check)
                     if val is not None:
                         val = val.to_dict(orient='records')
@@ -129,11 +129,12 @@ def get_inventory_ajax(request):
                 else:
                     val = []
                 wheres.append({'key': key, 'values': val})
-            print(wheres)
+            print(gets)
             for index, row in gets.iterrows():
                 lines = {"CATEGORY": row['CATEGORY'], "INTITULE": row['INTITULE']}
                 for item in wheres:
                     find_list = item['values']
+                    # print(item)
                     if find_list:
                         category_value = next(
                             (x['VALUE'] for x in find_list if x.get('FAMILLE') == row['CATEGORY']), 0)
@@ -144,9 +145,9 @@ def get_inventory_ajax(request):
     context = {
         "data": datas
     }
-    print(f"=================================================")
-    print(f"{context}")  # Corrected line
-    print("=======================================================")
+    # print(f"=================================================")
+    # print(f"{context}")  # Corrected line
+    # print("=======================================================")
     return JsonResponse(context, safe=False)
 
 
