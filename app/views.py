@@ -1,4 +1,7 @@
+import decimal
 import json
+from datetime import datetime
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -9,72 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from app.forms import SearchForm
 from app.models import Societe
 from guard.models import CustomUser
-from utils.script import get_choix, check_base, write_log, get_cell_data, are_valid_uuids, get_all_filter, \
-    get_sql, get_data
-
-
-def get_data_from_form(societe, debut, fin, filter_values):
-    datas = []
-    check = check_base(server=societe.connexion.server, name=societe.value, value=societe.base,
-                       username=societe.connexion.login, password=societe.connexion.password)
-    filter_values = ','.join(filter_values)
-    with open('data.json', 'r') as file:
-        try:
-            json_file = json.load(file)
-            sql = json_file['FAMILLE']
-            sql = sql.replace('{in}', str(filter_values))
-            query = json_file['COLUMN']
-        except Exception as e:
-            write_log(e)
-            sql = None
-            query = None
-
-        # print("=================================================")
-        # print(sql)
-        # print("=================================================")
-
-        gets = get_data(sql=sql, columns=["CATEGORY", "INTITULE"], conn=check)
-        where = {
-            '1': f"DL_MvtStock IN (1,3) and DL_DateBL<='{debut}'",
-            '2': f"do_domaine IN (0) and Dl_QTE < 0 and DL_DateBL between '{debut}' and '{fin}'",
-            '3': f"do_domaine IN (1) and DL_DateBL between '{debut}' and '{fin}'",
-            '4': f"do_type IN (40) and DL_DateBL between '{debut}' and '{fin}'",
-            '5': None,
-            '6': f"do_type IN (23) and dl_mvtstock=1 and DL_DateBL between '{debut}' and '{fin}'",
-            '7': f"do_type IN (20) and DO_PIECE not like'i00%' and DL_DateBL between '{debut}' and '{fin}'",
-            '8': f"do_type IN (20) and DO_PIECE like'i00%' and DL_DateBL between '{debut}' and '{fin}'",
-            '9': None,
-            '10': f"do_domaine IN (0) and Dl_QTE > 0 and DL_DateBL between '{debut}' and '{fin}'",
-            '11': f"do_type IN (41) and DL_DateBL between '{debut}' and '{fin}'",
-            '12': None,
-            '13': f"do_type IN (23) and dl_mvtstock=3 and DL_DateBL between '{debut}' and '{fin}'",
-            '14': f"do_type IN (21) and DO_PIECE not like'i00%' and DL_DateBL between '{debut}' and '{fin}'",
-            '15': f"do_type IN (21) and DO_PIECE like'i00%' and DL_DateBL between '{debut}' and '{fin}'",
-            '16': None,
-            '17': None,
-            '18': f"DL_MvtStock IN (1,3) and DL_DateBL<='{fin}'",
-        }
-        wheres = []
-        for key, value in where.items():
-            if value is not None:
-                query = query.replace('{where}', value).replace('{in}', filter_values)
-                val = get_data(sql=query, columns=["FAMILLE", "VALUE"], conn=check)
-                if val is not None:
-                    val = val.to_dict(orient='records')
-                else:
-                    val = []
-            else:
-                val = []
-            wheres.append({'key': key, 'value': val})
-        for index, row in gets.iterrows():
-            lines = {'CATEGORY': row['CATEGORY'], 'INTITULE': row['INTITULE']}
-            for i, j in where.items():
-                find_list = wheres[int(i) - 1]['value']
-                value = next((item['VALUE'] for item in find_list if item['FAMILLE'] == row['CATEGORY']), 0)
-                lines[str(int(i) - 1)] = value
-            datas.append(lines)
-
-    return datas
+from utils.script import get_choix, check_base, write_log, get_cell_data, are_valid_uuids, get_data
 
 
 @login_required
@@ -90,12 +28,14 @@ def get(request):
     if request.method == 'GET':
         form = SearchForm(request.GET)
     else:
+        print(request.POST)
         form = SearchForm(request.POST)
         if form.is_valid():
             societe = form.cleaned_data['societe']
-            begin = form.cleaned_data.get('debut').strftime("%m/%d/%Y")
-            end = form.cleaned_data.get('fin').strftime("%m/%d/%Y")
-
+            begin = form.cleaned_data.get('debut').strftime("%d/%m/%Y")
+            end = form.cleaned_data.get('fin').strftime("%d/%m/%Y")
+            # begin = datetime.strptime(str(begin), "%Y-%m-%d")
+            # end = datetime.strptime(str(end), "%Y-%m-%d").strftime("%d/%m/%Y")
             if societe is not None:
                 item = Societe.objects.get(name__exact=societe)
                 if item:
@@ -133,17 +73,76 @@ def get(request):
 @csrf_exempt
 def get_inventory_ajax(request):
     datas = []
-    # data = json.loads(request.body)
-    # print(f"POST : {data} ")
+    print(request.POST)
     uid = are_valid_uuids(request.POST.get('uid'))
     begin = request.POST.get('begin')
     end = request.POST.get('end')
     filters = request.POST.getlist('filters')
     if None not in (begin, end, uid) and filters != '':
         societe = Societe.objects.get(uid__exact=uid)
-        datas = get_data_from_form(societe=societe, debut=begin, fin=end, filter_values=filters)
+        check = check_base(server=societe.connexion.server, name=societe.value, value=societe.base,
+                           username=societe.connexion.login, password=societe.connexion.password)
+        filter_values = ','.join(filters)
+        with open('data.json', 'r') as file:
+            try:
+                json_file = json.load(file)
+                sql = json_file['FAMILLE']
+                sql = sql.replace('{in}', str(filter_values))
+                query = json_file['COLUMN']
+            except Exception as e:
+                write_log(e)
+                sql = None
+                query = None
+
+        gets = get_data(sql=sql, columns=["CATEGORY", "INTITULE"], conn=check)
+        print(begin, end)
+        if gets is not None and begin is not None and end is not None:
+            where = {
+                'STK_INTIALE': f"DL_MvtStock IN (1,3) and DL_DateBL<='{begin}'",
+                'EN_RETOUR': f"do_domaine IN (0) and Dl_QTE < 0 and DL_DateBL between '{begin}' and '{end}'",
+                'EN_RECEP': f"do_domaine IN (1) and DL_DateBL between '{begin}' and '{end}'",
+                'EN_PROD': f"do_type IN (40) and DL_DateBL between '{begin}' and '{end}'",
+                'EN_ASSEMB': None,
+                'EN_TRANS': f"do_type IN (23) and dl_mvtstock=1 and DL_DateBL between '{begin}' and '{end}'",
+                'EN_MVM': f"do_type IN (20) and DO_PIECE not like'i00%' and DL_DateBL between '{begin}' and '{end}'",
+                'EN_INV': f"do_type IN (20) and DO_PIECE like'i00%' and DL_DateBL between '{begin}' and '{end}'",
+                'TOTAL_EN': None,
+                'SO_VENTE': f"do_domaine IN (0) and Dl_QTE > 0 and DL_DateBL between '{begin}' and '{end}'",
+                'SO_CONSO': f"do_type IN (41) and DL_DateBL between '{begin}' and '{end}'",
+                'SO_DESAS': None,
+                'SO_TRANS': f"do_type IN (23) and dl_mvtstock=3 and DL_DateBL between '{begin}' and '{end}'",
+                'SO_MVM': f"do_type IN (21) and DO_PIECE not like'i00%' and DL_DateBL between '{begin}' and '{end}'",
+                'SO_INV': f"do_type IN (21) and DO_PIECE like'i00%' and DL_DateBL between '{begin}' and '{end}'",
+                'TOTAL_SO': None,
+                'STK_FINAL_CAL': None,
+                'STK_FINAL_SYS': f"DL_MvtStock IN (1,3) and DL_DateBL<='{end}'"
+            }
+            wheres = []
+            for key, value in where.items():
+                if value is not None:
+                    query = query.replace('{where}', value).replace('{in}', filter_values)
+                    val = get_data(sql=query, columns=["FAMILLE", "VALUE"], conn=check)
+                    if val is not None:
+                        val = val.to_dict(orient='records')
+                    else:
+                        val = []
+                else:
+                    val = []
+                wheres.append({'key': key, 'values': val})
+            print(wheres)
+            for index, row in gets.iterrows():
+                lines = {"CATEGORY": row['CATEGORY'], "INTITULE": row['INTITULE']}
+                for item in wheres:
+                    find_list = item['values']
+                    if find_list:
+                        category_value = next(
+                            (x['VALUE'] for x in find_list if x.get('FAMILLE') == row['CATEGORY']), 0)
+                    else:
+                        category_value = 0
+                    lines[item['key']] = category_value
+                datas.append(lines)
     context = {
-        'datas': datas[0]
+        "data": datas
     }
     print(f"=================================================")
     print(f"{context}")  # Corrected line
@@ -232,8 +231,8 @@ def cell_details_view(request):
         cell_content = request.POST.get('cellContent', None)
         first_cell_content = request.POST.get('firstCellContent', None)
         value = request.POST.get('societe', None)
-        debut = request.POST.get('debut', None)
-        fin = request.POST.get('fin', None)
+        begin = request.POST.get('begin', None)
+        end = request.POST.get('end', None)
         filtre = request.POST.getlist('filtre[]', None)
         # if filtre == [] or filtre == [''] or filtre is None:
         #     data = get_choix(societe=value, where=True)
@@ -252,8 +251,8 @@ def cell_details_view(request):
             datas = get_cell_data(
                 index=first_cell_content,
                 conn=check,
-                debut=debut,
-                fin=fin,
+                begin=begin,
+                end=end,
                 column=column_index,
                 filtre=filtre
             )

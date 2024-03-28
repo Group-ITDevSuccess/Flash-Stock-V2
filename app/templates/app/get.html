@@ -24,8 +24,7 @@
                         style="background-color: #00B050;vertical-align: middle;">Intitulé
                     </th>
                     <th rowspan="2" class="text-center text-white"
-                        style="background-color: #00B050;vertical-align: middle;">Stock Initial
-                        Système<code>*</code>
+                        style="background-color: #00B050;vertical-align: middle;">Stock Initial Système<code>*</code>
                     </th>
                     <th colspan="7" class="text-center text-white"
                         style="background-color: #4472C4;vertical-align: middle;">Entrée
@@ -40,35 +39,26 @@
                         style="background-color: #00B050;vertical-align: middle;">Total Sortie
                     </th>
                     <th rowspan="2" class="text-center text-white"
-                        style="background-color: #A5A5A5;vertical-align: middle;">Stock Final Calculé
+                        style="background-color: #A5A5A5;vertical-align: middle;">Stock Final Calcule
                     </th>
                     <th rowspan="2" class="text-center text-white"
-                        style="background-color: #00B050;vertical-align: middle;">Stock Final
-                        Système<code>*</code>
-                    </th>
+                        style="background-color: #00B050;vertical-align: middle;">Stock Final Système<code>*</code></th>
                 </tr>
                 <tr>
                     <th style="background-color: #B4C6E7;vertical-align: middle;">Retour<code>*</code>
-                    <th style="background-color: #B4C6E7;vertical-align: middle;">Réception<code>*</code>
-                    </th>
-                    <th style="background-color: #B4C6E7;vertical-align: middle;">Production
-                        OF<code>*</code></th>
+                    <th style="background-color: #B4C6E7;vertical-align: middle;">Réception<code>*</code></th>
+                    <th style="background-color: #B4C6E7;vertical-align: middle;">Production OF<code>*</code></th>
                     <th style="background-color: #B4C6E7;vertical-align: middle;">Assemblage</th>
-                    <th style="background-color: #B4C6E7;vertical-align: middle;">Transfert<code>*</code>
-                    </th>
+                    <th style="background-color: #B4C6E7;vertical-align: middle;">Transfert<code>*</code></th>
                     <th style="background-color: #B4C6E7;vertical-align: middle;">Mvt Entrée<code>*</code>
-                    <th style="background-color: #B4C6E7;vertical-align: middle;">Mvt Entrée
-                        Inventaire<code>*</code>
+                    <th style="background-color: #B4C6E7;vertical-align: middle;">Mvt Entrée Inventaire<code>*</code>
                     </th>
                     <th style="background-color: #F8CBAD;vertical-align: middle;">Vente<code>*</code></th>
-                    <th style="background-color: #F8CBAD;vertical-align: middle;">Consommation
-                        OF<code>*</code></th>
+                    <th style="background-color: #F8CBAD;vertical-align: middle;">Consommation OF<code>*</code></th>
                     <th style="background-color: #F8CBAD;vertical-align: middle;">Désassemblage</th>
-                    <th style="background-color: #F8CBAD;vertical-align: middle;">Transfert<code>*</code>
-                    </th>
+                    <th style="background-color: #F8CBAD;vertical-align: middle;">Transfert<code>*</code></th>
                     <th style="background-color: #F8CBAD;vertical-align: middle;">Mvt Sortie<code>*</code>
-                    <th style="background-color: #F8CBAD;vertical-align: middle;">Mvt Sortie
-                        Inventaire<code>*</code>
+                    <th style="background-color: #F8CBAD;vertical-align: middle;">Mvt Sortie Inventaire<code>*</code>
                     </th>
                 </tr>
                 </thead>
@@ -101,11 +91,6 @@
         </div>
         {% include 'layout/details-modal.html' %}
         {% include 'layout/societe-modal.html' %}
-    </div>
-    <div class="dropdown-menu" aria-labelledby="inventoryFilterDropdown">
-        <a class="dropdown-item" href="#">Option A</a>
-        <a class="dropdown-item" href="#">Option B</a>
-        <a class="dropdown-item" href="#">Option C</a>
     </div>
 {% endblock %}
 {% block script %}
@@ -150,17 +135,18 @@
                 },
             })
 
-            function getdata(url, data) {
-                if (dataTable) {
-                    dataTable.destroy()
-                }
+            function getdata(datas) {
+                $('#tableInventaire').DataTable().destroy();
                 dataTable = new DataTable('#tableInventaire', {
                     ajax: {
-                        url: url,
+                        url: '{% url 'app:get_inventory_ajax' %}',
                         dataSrc: 'data',
                         type: 'POST',
-                        data: data
+                        dataType: 'json',
+                        data: datas
                     },
+                    deferRender: true,
+                    processing: true,
                     paging: false,
                     info: false,
                     scrollCollapse: true,
@@ -206,7 +192,7 @@
                         }]
                     },
                     columnDefs: [
-                        {targets: 0, orderable: false},
+                        {targets: [0], orderable: false},
                         {targets: [], className: 'text-right'},
                         {targets: [], className: "cursor-pointer"},
                     ],
@@ -215,43 +201,41 @@
                         start: 4,
                         end: 3
                     },
-                    column: [
-                        {data: null, width: '5%'},
-                        {data: 'CATEGORY'},
-                        {data: 'INTITULE'},
-                        {data: '0'},
-                        {data: '1'},
-                        {data: '2'},
-                        {data: '3'},
-                        {data: '4'},
-                        {data: '5'},
-                        {data: '6'},
-                        {data: '7'},
-                        {data: '8'},
-                        {data: '9'},
-                        {data: '10'},
-                        {data: '11'},
-                        {data: '12'},
-                        {data: '13'},
-                        {data: '14'},
-                        {data: '15'},
-                        {data: '16'},
-                        {data: '17'},
-                        {data: null}
-                    ],
-                    deferRender: true,
                     select: true,
                     stateSave: true,
                     createdRow: function (row, data, dataIndex) {
                         $('td', row).eq(0).html(dataIndex + 1);
                     },
+                    columns: [
+                        {data: null, width: '5%'},
+                        {data: 'CATEGORY'},
+                        {data: 'INTITULE'},
+                        {data: 'STK_INTIALE'},
+                        {data: 'EN_RETOUR'},
+                        {data: 'EN_RECEP'},
+                        {data: 'EN_PROD'},
+                        {data: 'EN_ASSEMB'},
+                        {data: 'EN_TRANS'},
+                        {data: 'EN_MVM'},
+                        {data: 'EN_INV'},
+                        {data: 'TOTAL_EN'},
+                        {data: 'SO_VENTE'},
+                        {data: 'SO_CONSO'},
+                        {data: 'SO_DESAS'},
+                        {data: 'SO_TRANS'},
+                        {data: 'SO_MVM'},
+                        {data: 'SO_INV'},
+                        {data: 'TOTAL_SO'},
+                        {data: 'STK_FINAL_CAL'},
+                        {data: 'STK_FINAL_SYS'}
+                    ],
                     rowCallback: function (rows, data, start, end, display) {
                         let api = this.api();
                         let numColumns = api.columns().nodes().length;
 
                         for (let i = 2; i < numColumns; i++) {
                             let values;
-                            if ([].includes(i)) {
+                            if ([5].includes(i)) {
                                 try {
                                     let total_sum = api.column(i, {page: 'current'}).data().reduce(function (a, b) {
                                         return formatNumberToFr(a) + formatNumberToFr(b);
@@ -282,12 +266,10 @@
                 const filtersSelect = document.getElementById('filtersSelect');
                 const selectedValue = filtersSelect.value;
                 let data = {
-                    uid: '{{ uid }}',
-                    filters: selectedValue,  // Use the updated filter value
-                    begin: '{{ begin }}',
-                    end: '{{ end }}',
-                };
-                getdata('{% url 'app:get_inventory_ajax' %}', data)
+                    uid: '{{ uid }}', filters: `${selectedValue}`, begin: '{{ begin }}', end: '{{ end }}'
+                }
+                console.log(data)
+                getdata(data)
 
             });
         });
