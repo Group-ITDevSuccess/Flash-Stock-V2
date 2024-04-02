@@ -29,7 +29,7 @@ class SearchForm(forms.Form):
         self.fields['societe'] = forms.ChoiceField(
             choices=societe_choices,
             label='Société',
-            widget=forms.Select(attrs={'class': 'selectpicker me-2'})
+            widget=forms.Select(attrs={'class': 'selectpicker me-2 ', 'data-style': "btn-primary"})
         )
 
 

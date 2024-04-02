@@ -30,31 +30,35 @@ def get(request):
     else:
         print(request.POST)
         form = SearchForm(request.POST)
-        if form.is_valid():
-            societe = form.cleaned_data['societe']
-            begin = form.cleaned_data.get('debut').strftime("%d/%m/%Y")
-            end = form.cleaned_data.get('fin').strftime("%d/%m/%Y")
-            # begin = datetime.strptime(str(begin), "%Y-%m-%d")
-            # end = datetime.strptime(str(end), "%Y-%m-%d").strftime("%d/%m/%Y")
-            if societe is not None:
-                item = Societe.objects.get(name__exact=societe)
-                if item:
-                    try:
-                        conn = check_base(
-                            server=item.connexion.server,
-                            name=item.name,
-                            value=item.value,
-                            username=item.connexion.login,
-                            password=item.connexion.password,
-                        )
-                        data = get_choix(conn=conn)
-                        filters = data
-                    except Exception as e:
-                        write_log(str(e))
-                        pass
-                uid = item.pk
-        else:
-            print(f"Formulaire est invalide : {str(form.errors)}")
+        try:
+            if form.is_valid():
+                societe = form.cleaned_data['societe']
+                begin = form.cleaned_data.get('debut').strftime("%d/%m/%Y")
+                end = form.cleaned_data.get('fin').strftime("%d/%m/%Y")
+
+                if societe is not None:
+                    item = Societe.objects.get(name__exact=societe)
+                    if item:
+                        try:
+                            conn = check_base(
+                                server=item.connexion.server,
+                                name=item.name,
+                                value=item.value,
+                                username=item.connexion.login,
+                                password=item.connexion.password,
+                            )
+                            if conn is not None:
+                                data = get_choix(conn=conn)
+                                filters = data
+                                conn.close()
+                        except Exception as e:
+                            write_log(str(e))
+                            pass
+                    uid = item.pk
+            else:
+                print(f"Formulaire est invalide : {str(form.errors)}")
+        except Exception as e:
+            print(f"Erreur {str(e)}")
     context = {
         'datas': datas,
         'form': form,
@@ -83,65 +87,85 @@ def get_inventory_ajax(request):
         check = check_base(server=societe.connexion.server, name=societe.value, value=societe.base,
                            username=societe.connexion.login, password=societe.connexion.password)
         filter_values = ','.join(filters)
-        with open('data.json', 'r') as file:
-            try:
-                json_file = json.load(file)
-                sql = json_file['FAMILLE']
-                sql = sql.replace('{in}', str(filter_values))
-                query = json_file['COLUMN']
-            except Exception as e:
-                write_log(e)
-                sql = None
-                query = None
+        if check is not None:
+            with open('data.json', 'r') as file:
+                try:
+                    json_file = json.load(file)
+                    sql = json_file['FAMILLE']
+                    sql = sql.replace('{in}', str(filter_values))
+                    query = json_file['COLUMN']
+                except Exception as e:
+                    write_log(e)
+                    sql = None
+                    query = None
 
-        gets = get_data(sql=sql, columns=["CATEGORY", "INTITULE"], conn=check)
-        print(begin, end)
-        if gets is not None and begin is not None and end is not None:
-            lists = {
-                'STK_INTIALE': f"DL_MvtStock IN (1,3) and DL_DateBL<='{begin}'",
-                'EN_RETOUR': f"do_domaine IN (0) and Dl_QTE < 0 and DL_DateBL between '{begin}' and '{end}'",
-                'EN_RECEP': f"do_domaine IN (1) and DL_DateBL between '{begin}' and '{end}'",
-                'EN_PROD': f"do_type IN (40) and DL_DateBL between '{begin}' and '{end}'",
-                'EN_ASSEMB': None,
-                'EN_TRANS': f"do_type IN (23) and dl_mvtstock=1 and DL_DateBL between '{begin}' and '{end}'",
-                'EN_MVM': f"do_type IN (20) and DO_PIECE not like'i00%' and DL_DateBL between '{begin}' and '{end}'",
-                'EN_INV': f"do_type IN (20) and DO_PIECE like'i00%' and DL_DateBL between '{begin}' and '{end}'",
-                'TOTAL_EN': None,
-                'SO_VENTE': f"do_domaine IN (0) and Dl_QTE > 0 and DL_DateBL between '{begin}' and '{end}'",
-                'SO_CONSO': f"do_type IN (41) and DL_DateBL between '{begin}' and '{end}'",
-                'SO_DESAS': None,
-                'SO_TRANS': f"do_type IN (23) and dl_mvtstock=3 and DL_DateBL between '{begin}' and '{end}'",
-                'SO_MVM': f"do_type IN (21) and DO_PIECE not like'i00%' and DL_DateBL between '{begin}' and '{end}'",
-                'SO_INV': f"do_type IN (21) and DO_PIECE like'i00%' and DL_DateBL between '{begin}' and '{end}'",
-                'TOTAL_SO': None,
-                'STK_FINAL_CAL': None,
-                'STK_FINAL_SYS': f"DL_MvtStock IN (1,3) and DL_DateBL<='{end}'"
-            }
-            wheres = []
-            for key, value in lists.items():
-                if value is not None:
-                    query = query.replace('{lists}', value).replace('{in}', filter_values)
-                    val = get_data(sql=query, columns=["FAMILLE", "VALUE"], conn=check)
-                    if val is not None:
-                        val = val.to_dict(orient='records')
+            gets = get_data(sql=sql, columns=["CATEGORY", "INTITULE"], conn=check)
+            print(begin, end)
+            if gets is not None and begin is not None and end is not None:
+                begin = datetime.strptime(begin, "%d/%m/%Y").strftime("%Y-%m-%d")
+                end = datetime.strptime(end, "%d/%m/%Y").strftime("%Y-%m-%d")
+                lists = {
+                    'STK_INTIALE': f"DL_MvtStock IN (1,3) and DL_DateBL<='{begin}'",
+                    'EN_RETOUR': f"do_domaine IN (0) and Dl_QTE < 0 and DL_DateBL between '{begin}' and '{end}'",
+                    'EN_RECEP': f"do_domaine IN (1) and DL_DateBL between '{begin}' and '{end}'",
+                    'EN_PROD': f"do_type IN (40) and DL_DateBL between '{begin}' and '{end}'",
+                    'EN_ASSEMB': None,
+                    'EN_TRANS': f"do_type IN (23) and dl_mvtstock=1 and DL_DateBL between '{begin}' and '{end}'",
+                    'EN_MVM': f"do_type IN (20) and DO_PIECE not like'i00%' and DL_DateBL between '{begin}' and '{end}'",
+                    'EN_INV': f"do_type IN (20) and DO_PIECE like'i00%' and DL_DateBL between '{begin}' and '{end}'",
+                    'TOTAL_EN': None,
+                    'SO_VENTE': f"do_domaine IN (0) and Dl_QTE > 0 and DL_DateBL between '{begin}' and '{end}'",
+                    'SO_CONSO': f"do_type IN (41) and DL_DateBL between '{begin}' and '{end}'",
+                    'SO_DESAS': None,
+                    'SO_TRANS': f"do_type IN (23) and dl_mvtstock=3 and DL_DateBL between '{begin}' and '{end}'",
+                    'SO_MVM': f"do_type IN (21) and DO_PIECE not like'i00%' and DL_DateBL between '{begin}' and '{end}'",
+                    'SO_INV': f"do_type IN (21) and DO_PIECE like'i00%' and DL_DateBL between '{begin}' and '{end}'",
+                    'TOTAL_SO': None,
+                    'STK_FINAL_CAL': None,
+                    'STK_FINAL_SYS': f"DL_MvtStock IN (1,3) and DL_DateBL<='{end}'"
+                }
+                wheres = []
+                for key, value in lists.items():
+                    if value is not None:
+                        query = query.replace('{where}', value).replace('{in}', filter_values)
+                        # print(f"=================================================")
+                        # print("QUERY: ", query)
+                        # print(f"=================================================")
+                        val = get_data(sql=query, columns=["FAMILLE", "VALUE"], conn=check)
+                        # print(f"=================================================")
+                        # print("VAL: ", val)
+                        # print(f"=================================================")
+                        if val is not None:
+                            val = {key: val.to_dict(orient='records')}
+                        else:
+                            val = {key: []}
                     else:
-                        val = []
-                else:
-                    val = []
-                wheres.append({'key': key, 'values': val})
-            print(gets)
-            for index, row in gets.iterrows():
-                lines = {"CATEGORY": row['CATEGORY'], "INTITULE": row['INTITULE']}
-                for item in wheres:
-                    find_list = item['values']
-                    # print(item)
-                    if find_list:
-                        category_value = next(
-                            (x['VALUE'] for x in find_list if x.get('FAMILLE') == row['CATEGORY']), 0)
-                    else:
-                        category_value = 0
-                    lines[item['key']] = category_value
-                datas.append(lines)
+                        val = {key: []}
+                    wheres.append(val)
+                print(f"=================================================")
+                print("WHERES: ", wheres[0])
+                print(f"=================================================")
+                for index, row in gets.iterrows():
+                    lines = {"CATEGORY": row['CATEGORY'], "INTITULE": row['INTITULE']}
+                    for key, value in lists.items():
+                        if key in wheres:
+                            print(f"=================================================")
+                            print(f"{key}: {wheres[key]}")
+                            print(f"=================================================")
+                        # else:
+                        #     print(f"{key} N'existe pas !")
+                        # find_list = wheres[key]
+
+                        # if find_list:
+                        #     category_value = next((x['VALUE'] for x in find_list if x.get('FAMILLE') == row['CATEGORY']), 0)
+                        # else:
+                        #     category_value = 0
+                        # lines[item['key']] = category_value
+                    # datas.append(lines)
+            check.close()
+        else:
+            messages.warning(request, f"Erreur de connexion a la base {societe.name} !")
+            return redirect('app:get')
     context = {
         "data": datas
     }
@@ -252,8 +276,8 @@ def cell_details_view(request):
             datas = get_cell_data(
                 index=first_cell_content,
                 conn=check,
-                begin=begin,
-                end=end,
+                debut=begin,
+                fin=end,
                 column=column_index,
                 filtre=filtre
             )

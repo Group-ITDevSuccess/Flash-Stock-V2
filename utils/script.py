@@ -26,15 +26,16 @@ def check_base(server, name, value, username, password):
                       f"PWD={password}"
         conn = pyodbc.connect(value_input)
         # conn.close()
-        # print(f"Connected in {name} in {value_input}")
-        return conn
+        print(f"Connected in {name} in {value_input}")
     except pyodbc.Error as e:
         # Si une erreur se produit lors de la connexion, ajoutez le serveur à la liste des bases sans accès
         print("===============================")
         print(f"Erreur de Connexion pour {name} ")
         print("===============================")
         write_log(f"Erreur de connexion : {str(e)}")
-        return conn
+    except Exception as e:
+        write_log(f"Erreur Exception : {str(e)}")
+    return conn
 
 
 def extract_from_path(path):

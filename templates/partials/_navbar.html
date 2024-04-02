@@ -1,5 +1,5 @@
 {% load static %}
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-white bg-dark">
     <a class="navbar-brand" href="{% url 'app:get' %}">
         <img src="{% static 'img/logo-inviso.ico' %}" width="30" height="30" class="d-inline-block align-top" alt=""
              loading="lazy">
@@ -12,10 +12,7 @@
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav mr-auto">
             <li class="nav-item active">
-                <a class="nav-link" href="{% url 'app:get' %}">Home <span class="sr-only">(current)</span></a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
+                <a class="nav-link text-white" href="{% url 'app:get' %}">Home <span class="sr-only">(current)</span></a>
             </li>
             <li class="nav-item">
                 <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Administration</a>
@@ -60,9 +57,8 @@
                         <select id="filtersSelect" name="filtersSelect" class="selectpicker show-tick"
                                 data-live-search="true" data-size="8" data-style="btn-warning"
                                 title="Choisir un dépôt...">
-                            <option value="">------</option>
                             {% for filter_item in filters %}
-                                <option class="text-dark" value="{{ filter_item.DE_NO }}">{{ filter_item.DE_NO }}
+                                <option value="{{ filter_item.DE_NO }}">{{ filter_item.DE_NO }}
                                     - {{ filter_item.DE_INTITULE }}</option>
                             {% endfor %}
                         </select>
