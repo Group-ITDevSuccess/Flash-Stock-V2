@@ -63,7 +63,7 @@
                                 <td class="text-center">
                                     <div class="row">
                                         <div class="col-auto">
-                                            <a href="{% url 'home:delete_user' value.id %}"
+                                            <a href="{% url 'app:delete_user' value.id %}"
                                                class="btn btn-danger btn-sm delete-btn {% if value.username == 'admin' %}disabled{% endif %}"
                                                onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?');">
                                                 <i class="fa fa-trash"></i>
@@ -96,7 +96,7 @@
                                 <td>{{ data.name }}</td>
                                 <td>{{ data.connexion.server }}</td>
                                 <td>
-                                    <a href="{% url 'home:delete_societe' data.uid %}"
+                                    <a href="{% url 'app:delete_societe' data.uid %}"
                                        class="btn btn-danger btn-sm delete-btn {% if not user.is_superuser %}disabled{% endif %}"
                                        onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?');">
                                         <i class="fa fa-trash"></i>
@@ -136,7 +136,7 @@
 
             // Envoyer les données au backend via AJAX
             $.ajax({
-                url: '{% url 'home:update_user_field' %}',  // Remplacez par l'URL de votre vue de mise à jour
+                url: '{% url 'app:update_user_field' %}',  // Remplacez par l'URL de votre vue de mise à jour
                 method: 'POST',
                 data: {
                     user_id: userId,

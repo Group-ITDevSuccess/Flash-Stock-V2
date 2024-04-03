@@ -155,6 +155,75 @@ def get_inventory_ajax(request):
     # print("=======================================================")
     return JsonResponse(context, safe=False)
 
+@login_required
+@csrf_exempt
+def cell_details_view(request):
+    datas = []
+    try:
+        info_table = json.loads(request.POST['info_table'])
+        data_row = json.loads(request.POST['data_row'])[0]
+        colonneCheck = json.loads(request.POST['data_cell'])
+        begin = info_table.get('begin')
+        end = info_table.get('end')
+
+        societe = Societe.objects.filter(name__exact=info_table.get('societe'), active__exact=True).first()
+        check = check_base(server=societe.connexion.server, name=societe.value, value=societe.base,
+                           username=societe.connexion.login, password=societe.connexion.password)
+        if check is not None and societe:
+            with open('data.json', 'r') as file:
+                try:
+                    json_file = json.load(file)
+                    query = json_file['DETAILS']
+                except Exception as e:
+                    write_log(e)
+                    query = None
+            conditions = f"and DE_No in({info_table['depot']}) and FA_CodeFamille='{data_row['CATEGORY']}'"
+            begin = datetime.strptime(begin, "%d/%m/%Y").strftime("%Y-%m-%d")
+            end = datetime.strptime(end, "%d/%m/%Y").strftime("%Y-%m-%d")
+            if query is not None:
+                lists = {
+                    'STK_INTIALE': f"{query} DL_MvtStock IN (1,3) and DL_DateBL<='{begin}' {conditions}",
+                    'EN_RETOUR': f"{query} do_domaine IN (0) and Dl_QTE < 0 and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                    'EN_RECEP': f"{query} do_domaine IN (1) and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                    'EN_PROD': f"{query} do_type IN (40) and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                    'EN_ASSEMB': None,
+                    'EN_TRANS': f"{query} do_type IN (23) and dl_mvtstock=1 and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                    'EN_MVM': f"{query} do_type IN (20) and DO_PIECE not like'i00%' and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                    'EN_INV': f"{query} do_type IN (20) and DO_PIECE like'i00%' and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                    'TOTAL_EN': None,
+                    'SO_VENTE': f"{query} do_domaine IN (0) and Dl_QTE > 0 and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                    'SO_CONSO': f"{query} do_type IN (41) and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                    'SO_DESAS': None,
+                    'SO_TRANS': f"{query} do_type IN (23) and dl_mvtstock=3 and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                    'SO_MVM': f"{query} do_type IN (21) and DO_PIECE not like'i00%' and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                    'SO_INV': f"{query} do_type IN (21) and DO_PIECE like'i00%' and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                    'TOTAL_SO': None,
+                    'STK_FINAL_CAL': None,
+                    'STK_FINAL_SYS': f"{query} DL_MvtStock IN (1,3) and DL_DateBL<='{end}' {conditions}"
+                }
+                count = 1
+
+                for key, value in lists.items():
+                    if count == int(colonneCheck['col']) - 2:
+                        details = get_data(
+                            sql=value,
+                            columns=["PIECE", "DATE", "REF", "DESIGNATION", "QTE", "CMUP", "TOTAL"],
+                            conn=check
+                        )
+                        if details is not None:
+                            datas = details.to_dict(orient="records")
+                        break
+                    count += 1  # Incrémenter le compteur à chaque itération
+
+            check.close()
+
+
+    except Exception as e:
+        write_log(f"Erreur de {str(e)}")
+    response_data = {
+        'data': datas,
+    }
+    return JsonResponse(response_data, safe=False)
 
 @login_required
 def admin_view(request):
@@ -228,57 +297,3 @@ def show_modal(request):
     return JsonResponse({'success': True, 'data': []})
 
 
-@login_required
-def cell_details_view(request):
-    header = ['N° Piece', 'Date', 'Reference', 'Designation', 'Quantité', 'Prix Unitaire', 'Prix Total']
-    try:
-        column_index = request.POST.get('columnIndex', None)
-        row_index = request.POST.get('rowIndex', None)
-        cell_content = request.POST.get('cellContent', None)
-        first_cell_content = request.POST.get('firstCellContent', None)
-        value = request.POST.get('societe', None)
-        begin = request.POST.get('begin', None)
-        end = request.POST.get('end', None)
-        filtre = request.POST.getlist('filtre[]', None)
-        # if filtre == [] or filtre == [''] or filtre is None:
-        #     data = get_choix(societe=value, where=True)
-        #     if data is not None:
-        #         data = [str(value) for value in data]
-        #         data = ','.join(data)
-        # else:
-        #     filtre = filter(lambda x: x != '', filtre)
-        #     data = [str(value) for value in filtre]
-        #     data = ','.join(data)
-        datas = []
-        societe = Societe.objects.filter(name__exact=value, active__exact=True).first()
-        check = check_base(server=societe.connexion.server, name=societe.value, value=societe.base,
-                           username=societe.connexion.login, password=societe.connexion.password)
-        if check is not None and societe:
-            datas = get_cell_data(
-                index=first_cell_content,
-                conn=check,
-                debut=begin,
-                fin=end,
-                column=column_index,
-                filtre=filtre
-            )
-            check.close()
-
-        response_data = {
-            'data': datas,
-            'cell_content': cell_content,
-            'header': header,
-        }
-        # print(f"Data : {datas}")
-
-    except Exception as e:
-        write_log(f"Erreur de {str(e)}")
-        # print(f"Erreur : {str(e)}")
-        response_data = {
-            'data': [],
-            'cell_content': 0,
-            'header': header,  # You can customize this header as needed
-            'error': str(e)  # Add the error message to the response for debugging
-        }
-    # print("Donnee envoyer")
-    return JsonResponse(response_data)

@@ -120,7 +120,7 @@
             }
         }
 
-        $.fn.dataTable.ext.errMode = 'throw';
+        {#$.fn.dataTable.ext.errMode = 'throw';#}
 
         document.addEventListener('DOMContentLoaded', function () {
             let dataTable = new DataTable('#tableInventaire', {
@@ -278,13 +278,15 @@
                     let parsedInfoRow = JSON.parse(info_row);
                     let row = parsedInfoRow.row;
                     let column = parsedInfoRow.column;
+
+                    {#console.log(`parsedInfoRow: ${parsedInfoRow}, row: ${row}, col: ${column}`)#}
                     if (![0, 1, 2, 7, 11, 14, 18, 19].includes(column)) {
                         let rowData = dataTable
                             .rows(row)
                             .data()
                             .toArray();
-                        let data_row = JSON.stringify(rowData)
 
+                        let data_row = JSON.stringify(rowData)
                         let modalHtml = `
                             <div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                                 <div class="modal-dialog modal-xl" role="document">
@@ -307,16 +309,18 @@
                                                         <th class="text-right"></th>
                                                         <th class="text-right"></th>
                                                         <th class="text-right"></th>
-                                                        <th class="text-right"></th>
                                                     </tr>
                                                 </thead>
                                                 <tfoot class="">
                                                     <tr>
-                                                        <th colspan="5" class="text-right">Total :</th>
+                                                        <th class="text-right">Total :</th>
                                                         <th class="text-right"></th>
                                                         <th class="text-right"></th>
                                                         <th class="text-right"></th>
                                                         <th class="text-right"></th>
+                                                        <th class="text-right"></th>
+                                                        <th class="text-right"></th>
+                                                        <th class="text-right text-success font-weight-bold></th>
                                                     </tr>
                                                 </tfoot>
                                             </table>
@@ -334,13 +338,23 @@
 
                         detailsModal.on('shown.bs.modal', function () {
                             $('#modalTable').DataTable().destroy();
+                            const depotSelect = document.getElementById('filtersSelect').value;
                             new DataTable('#modalTable', {
                                 ajax: {
-                                    url: '',
+                                    url: '{% url 'app:cell_details_view' %}',
                                     type: 'POST',
                                     data: {
-                                        info_row: info_row,
-                                        data_row: data_row
+                                        info_table: JSON.stringify({
+                                            'societe': '{{ societe }}',
+                                            'begin': '{{ begin }}',
+                                            'end': '{{ end }}',
+                                            'depot': depotSelect
+                                        }),
+                                        data_row: data_row,
+                                        data_cell: JSON.stringify({
+                                            'row': parseInt(row),
+                                            'col': parseInt(column)
+                                        })
                                     }
                                 },
                                 info: false,
@@ -349,7 +363,7 @@
                                 paging: false,
                                 fixedColumns: {
                                     start: 2,
-                                    end: 2
+                                    end: 3
                                 },
                                 scrollY: '50vh',
                                 layout: {
@@ -377,15 +391,14 @@
                                     $('td', row).eq(0).html(dataIndex + 1);
                                 },
                                 columnDefs: [
-                                    {targets: [0, 7], className: 'text-right'},
+                                    {targets: [0, 5, 6, 7], className: 'text-right'},
                                     {
-                                        targets: [3],
+                                        targets: [2],
                                         render: DataTable.render.date()
                                     },
                                     {
-                                        target: [7],
+                                        target: [5, 6, 7],
                                         render: function (data, type, cell) {
-                                            // Format the number with desired precision and separators
                                             return parseFloat(data).toLocaleString('fr-FR', {
                                                 minimumFractionDigits: 2,
                                                 maximumFractionDigits: 2
@@ -393,36 +406,36 @@
                                         }
                                     },
                                 ],
+                                initComplete: function (settings, json) {
+                                    let api = this.api();
+                                    let numColumns = api.columns().nodes().length;
 
+                                    for (let i = 5; i < numColumns; i++) {
+                                        let total = api
+                                            .column(i)
+                                            .data()
+                                            .reduce((a, b) => formatNumberToFr(a) + formatNumberToFr(b), 0);
+                                        api.column(i)
+                                            .footer()
+                                            .innerHTML = `${total.toLocaleString('fr-FR',
+                                            {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2
+                                            }
+                                        )}`;
+                                    }
+                                },
                                 columns: [
                                     {title: '#', data: null, width: '5%'},
-                                    {title: 'NUM', data: 'num'},
-                                    {title: 'TYPE', data: 'types'},
-                                    {title: 'DATE', data: 'dates'},
-                                    {title: 'REFERENCE', data: 'ref'},
-                                    {title: 'DESIGNATION', data: 'designation'},
-                                    {title: 'STATUS', data: 'status'},
-                                    {title: 'SOLDE', data: 'stu'},
-                                    {title: 'UNITE', data: 'unite'},
+                                    {title: 'N° PIECE', data: 'PIECE'},
+                                    {title: 'DATE', data: 'DATE'},
+                                    {title: 'REFERENCE', data: 'REF'},
+                                    {title: 'DESIGNATION', data: 'DESIGNATION'},
+                                    {title: 'QTE', data: 'QTE'},
+                                    {title: 'PRIX UNITAIRE', data: 'CMUP'},
+                                    {title: 'TOTAL', data: 'TOTAL'}
                                 ],
-                                initComplete: function (row, data, start, end, display) {
-                                    let api = this.api();
-                                    let currentPosition = api.colReorder.transpose(7);
-                                    let total = api
-                                        .column(currentPosition)
-                                        .data()
-                                        .reduce((a, b) => formatNumberToFr(a) + formatNumberToFr(b), 0);
-                                    {#console.log(total)#}
-                                    api.column(currentPosition)
-                                        .footer()
-                                        .innerHTML = `${total.toLocaleString('fr-FR',
-                                        {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2
-                                        }
-                                    )} Ariary`;
 
-                                },
                             })
 
                         })
@@ -431,7 +444,6 @@
                 })
             }
 
-            const form = document.getElementById('depotForm');
             const submitButton = document.getElementById('submitButtonDepot');
             submitButton.addEventListener('click', function (event) {
                 event.preventDefault();
@@ -441,7 +453,6 @@
                 let data = {
                     uid: '{{ uid }}', filters: `${selectedValue}`, begin: '{{ begin }}', end: '{{ end }}'
                 }
-                console.log(data)
                 getdata(data)
 
             });
