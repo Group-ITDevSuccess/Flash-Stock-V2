@@ -18,13 +18,13 @@
                 <tr>
                     <th rowspan="2" class="text-white bg-dark" style="vertical-align: middle;">#</th>
                     <th rowspan="2" class="text-center text-white"
-                        style="background-color: #00B050;vertical-align: middle;">Catégorie
+                        style="background-color: #e1cfa2;vertical-align: middle;">Catégorie
                     </th>
                     <th rowspan="2" class="text-center text-white"
-                        style="background-color: #00B050;vertical-align: middle;">Intitulé
+                        style="background-color: #e1cfa2;vertical-align: middle;">Intitulé
                     </th>
                     <th rowspan="2" class="text-center text-white"
-                        style="background-color: #00B050;vertical-align: middle;">Stock Initial Système<code>*</code>
+                        style="background-color: #00B050;vertical-align: middle;">Stock Init Syst<code>*</code>
                     </th>
                     <th colspan="7" class="text-center text-white"
                         style="background-color: #4472C4;vertical-align: middle;">Entrée
@@ -39,10 +39,10 @@
                         style="background-color: #00B050;vertical-align: middle;">Total Sortie
                     </th>
                     <th rowspan="2" class="text-center text-white"
-                        style="background-color: #A5A5A5;vertical-align: middle;">Stock Final Calcule
+                        style="background-color: #A5A5A5;vertical-align: middle;">Stock Final Calc
                     </th>
                     <th rowspan="2" class="text-center text-white"
-                        style="background-color: #00B050;vertical-align: middle;">Stock Final Système<code>*</code></th>
+                        style="background-color: #44bdc6;vertical-align: middle;">Stock Final Syst<code>*</code></th>
                 </tr>
                 <tr>
                     <th style="background-color: #B4C6E7;vertical-align: middle;">Retour<code>*</code>
@@ -200,7 +200,7 @@
                             render: DataTable.render.datetime()
                         },
                         {
-                            target: [3, 4, 5, 6, 8, 9, 10, 12, 13, 15, 16, 17, 20],
+                            target: [3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20],
                             render: function (data, type, cell) {
                                 if (data !== '') {
                                     return parseFloat(data).toLocaleString('fr-FR', {
@@ -235,36 +235,41 @@
                         {data: 'EN_TRANS'},
                         {data: 'EN_MVM'},
                         {data: 'EN_INV'},
-                        {data: 'TOTAL_EN'},
+                        {
+                            data: 'TOTAL_EN'
+                        },
                         {data: 'SO_VENTE'},
                         {data: 'SO_CONSO'},
                         {data: 'SO_DESAS'},
                         {data: 'SO_TRANS'},
                         {data: 'SO_MVM'},
                         {data: 'SO_INV'},
-                        {data: 'TOTAL_SO'},
-                        {data: 'STK_FINAL_CAL'},
+                        {
+                            data: 'TOTAL_SO'
+                        },
+                        {
+                            data: 'STK_FINAL_CAL'
+                        },
                         {data: 'STK_FINAL_SYS'}
                     ],
                     initComplete: function (settings, json) {
                         let api = this.api();
                         let numColumns = api.columns().nodes().length;
-
                         for (let i = 3; i < numColumns; i++) {
                             let values;
                             try {
                                 let total_sum = api.column(i, {page: 'current'}).data().reduce(function (a, b) {
                                     return formatNumberToFr(a) + formatNumberToFr(b);
-                                }, 0);
+                                }, formatNumberToFr(0));
                                 try {
                                     values = parseFloat(total_sum).toLocaleString('fr-FR');
 
                                 } catch (e) {
-                                    values = ''
+                                    values = formatNumberToFr(0)
                                 }
                             } catch (e) {
                                 let footerElement = api.column(i).footer();
-                                values = footerElement ? footerElement.innerHTML : '';
+                                values = footerElement ? footerElement.innerHTML : formatNumberToFr(0);
                             }
                             $(api.column(i).footer()).html(values);
 
@@ -448,10 +453,10 @@
             submitButton.addEventListener('click', function (event) {
                 event.preventDefault();
 
-                const filtersSelect = document.getElementById('filtersSelect');
-                const selectedValue = filtersSelect.value;
+                const selectedDepots = Array.from(document.getElementById('filtersSelect').selectedOptions).map(option => option.value);
+                console.log(selectedDepots)
                 let data = {
-                    uid: '{{ uid }}', filters: `${selectedValue}`, begin: '{{ begin }}', end: '{{ end }}'
+                    uid: '{{ uid }}', filters: `${selectedDepots}`, begin: '{{ begin }}', end: '{{ end }}'
                 }
                 getdata(data)
 

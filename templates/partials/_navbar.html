@@ -11,11 +11,12 @@
 
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
-                <a class="nav-link text-white" href="{% url 'app:get' %}">Home <span class="sr-only">(current)</span></a>
+            <li class="nav-item {% if path == '/' %}active{% endif %}">
+                <a class="nav-link text-white" href="{% url 'app:get' %}">Home <span
+                        class="sr-only">(current)</span></a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'app:admin_view' %}" tabindex="-1">Administration</a>
+            <li class="nav-item {% if path == '/administrations/' %}active text-white{% endif %} {% if not user.is_staff %}disabled{% endif %}">
+                <a class="nav-link " href="{% url 'app:admin_view' %}" tabindex="-1">Administration</a>
             </li>
         </ul>
         <div class="navbar-text d-flex my-2 my-lg-0">
@@ -53,7 +54,10 @@
                         <label for="filtersSelect"></label>
                         <select id="filtersSelect" name="filtersSelect" class="selectpicker show-tick"
                                 data-live-search="true" data-size="8" data-style="btn-warning"
-                                title="Choisir un dépôt...">
+                                title="Choisir un dépôt..." multiple
+                                data-selected-text-format="count"
+                                data-actions-box='true'
+                                data-size=10>
                             {% for filter_item in filters %}
                                 <option value="{{ filter_item.DE_NO }}">{{ filter_item.DE_NO }}
                                     - {{ filter_item.DE_INTITULE }}</option>
@@ -62,7 +66,8 @@
                     </div>
                 </div>
                 <div class="col-auto">
-                    <button type="submit" id="submitButtonDepot" class="btn btn-outline-success"><i class="fas fa-search"></i></button>
+                    <button type="submit" id="submitButtonDepot" class="btn btn-outline-success"><i
+                            class="fas fa-search"></i></button>
                 </div>
             </form>
             <a href="{% url 'guard:logout' %}" class="btn btn-outline-danger ml-1 my-2 my-sm-0">Déconnecter</a>

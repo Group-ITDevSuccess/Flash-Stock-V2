@@ -29,22 +29,30 @@ class SearchForm(forms.Form):
         self.fields['societe'] = forms.ChoiceField(
             choices=societe_choices,
             label='Société',
-            widget=forms.Select(attrs={'class': 'selectpicker me-2 ', 'data-style': "btn-primary"})
+            widget=forms.Select(
+                attrs={'class': 'selectpicker me-2 ', 'data-style': "btn-primary", "data-live-search": "true",
+                       "data-header": "Choisir un Societe...", "data-size": "8"}),
+            required=True
         )
 
 
 class ChoiseForm(forms.Form):
-    filtre = forms.ChoiceField(
+    filtre = forms.MultipleChoiceField(
         label='Depot',
-        widget=forms.Select(
+        widget=forms.SelectMultiple(
             attrs={
                 'class': 'selectpicker me-2 ',
                 'data-live-search': 'true',
                 'data-live-search-placeholder': 'Search',
-                'tabindex': '-98'
+                'tabindex': '-98',
+                'data-selected-text-format': "count",
+                'data-actions-box': 'true',
+                'data-size': 10,
+                'multiple': 'multiple'
             }
         ),
-        required=False
+        required=False,
+
     )
 
     def __init__(self, *args, **kwargs):
