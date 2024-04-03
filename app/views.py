@@ -12,7 +12,8 @@ from django.views.decorators.csrf import csrf_exempt
 from app.forms import SearchForm
 from app.models import Societe
 from guard.models import CustomUser
-from utils.script import get_choix, check_base, write_log, get_cell_data, are_valid_uuids, get_data
+from utils.script import get_choix, check_base, write_log, get_cell_data, are_valid_uuids, get_data, \
+    find_value_in_wheres
 
 
 @login_required
@@ -28,7 +29,7 @@ def get(request):
     if request.method == 'GET':
         form = SearchForm(request.GET)
     else:
-        print(request.POST)
+        # print(request.POST)
         form = SearchForm(request.POST)
         try:
             if form.is_valid():
@@ -77,7 +78,6 @@ def get(request):
 @csrf_exempt
 def get_inventory_ajax(request):
     datas = []
-    print(request.POST)
     uid = are_valid_uuids(request.POST.get('uid'))
     begin = request.POST.get('begin')
     end = request.POST.get('end')
@@ -87,82 +87,63 @@ def get_inventory_ajax(request):
         check = check_base(server=societe.connexion.server, name=societe.value, value=societe.base,
                            username=societe.connexion.login, password=societe.connexion.password)
         filter_values = ','.join(filters)
-        if check is not None:
-            with open('data.json', 'r') as file:
-                try:
-                    json_file = json.load(file)
-                    sql = json_file['FAMILLE']
-                    sql = sql.replace('{in}', str(filter_values))
-                    query = json_file['COLUMN']
-                except Exception as e:
-                    write_log(e)
-                    sql = None
-                    query = None
-
-            gets = get_data(sql=sql, columns=["CATEGORY", "INTITULE"], conn=check)
-            print(begin, end)
-            if gets is not None and begin is not None and end is not None:
-                begin = datetime.strptime(begin, "%d/%m/%Y").strftime("%Y-%m-%d")
-                end = datetime.strptime(end, "%d/%m/%Y").strftime("%Y-%m-%d")
-                lists = {
-                    'STK_INTIALE': f"DL_MvtStock IN (1,3) and DL_DateBL<='{begin}'",
-                    'EN_RETOUR': f"do_domaine IN (0) and Dl_QTE < 0 and DL_DateBL between '{begin}' and '{end}'",
-                    'EN_RECEP': f"do_domaine IN (1) and DL_DateBL between '{begin}' and '{end}'",
-                    'EN_PROD': f"do_type IN (40) and DL_DateBL between '{begin}' and '{end}'",
-                    'EN_ASSEMB': None,
-                    'EN_TRANS': f"do_type IN (23) and dl_mvtstock=1 and DL_DateBL between '{begin}' and '{end}'",
-                    'EN_MVM': f"do_type IN (20) and DO_PIECE not like'i00%' and DL_DateBL between '{begin}' and '{end}'",
-                    'EN_INV': f"do_type IN (20) and DO_PIECE like'i00%' and DL_DateBL between '{begin}' and '{end}'",
-                    'TOTAL_EN': None,
-                    'SO_VENTE': f"do_domaine IN (0) and Dl_QTE > 0 and DL_DateBL between '{begin}' and '{end}'",
-                    'SO_CONSO': f"do_type IN (41) and DL_DateBL between '{begin}' and '{end}'",
-                    'SO_DESAS': None,
-                    'SO_TRANS': f"do_type IN (23) and dl_mvtstock=3 and DL_DateBL between '{begin}' and '{end}'",
-                    'SO_MVM': f"do_type IN (21) and DO_PIECE not like'i00%' and DL_DateBL between '{begin}' and '{end}'",
-                    'SO_INV': f"do_type IN (21) and DO_PIECE like'i00%' and DL_DateBL between '{begin}' and '{end}'",
-                    'TOTAL_SO': None,
-                    'STK_FINAL_CAL': None,
-                    'STK_FINAL_SYS': f"DL_MvtStock IN (1,3) and DL_DateBL<='{end}'"
-                }
-                wheres = []
+        with open('data.json', 'r') as file:
+            try:
+                json_file = json.load(file)
+                sql = json_file['FAMILLE']
+                sql = sql.replace('{in}', str(filter_values))
+                query = json_file['COLUMN']
+            except Exception as e:
+                write_log(e)
+                sql = None
+                query = None
+        if check is not None and query is not None and sql is not None:
+            families = get_data(sql=sql, columns=["CATEGORY", "INTITULE"], conn=check)
+            begin = datetime.strptime(begin, "%d/%m/%Y").strftime("%Y-%m-%d")
+            end = datetime.strptime(end, "%d/%m/%Y").strftime("%Y-%m-%d")
+            conditions = "and DE_No in({in})  group by FA_CodeFamille"
+            lists = {
+                'STK_INTIALE': f"{query} DL_MvtStock IN (1,3) and DL_DateBL<='{begin}' {conditions}",
+                'EN_RETOUR': f"{query} do_domaine IN (0) and Dl_QTE < 0 and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                'EN_RECEP': f"{query} do_domaine IN (1) and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                'EN_PROD': f"{query} do_type IN (40) and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                'EN_ASSEMB': None,
+                'EN_TRANS': f"{query} do_type IN (23) and dl_mvtstock=1 and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                'EN_MVM': f"{query} do_type IN (20) and DO_PIECE not like'i00%' and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                'EN_INV': f"{query} do_type IN (20) and DO_PIECE like'i00%' and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                'TOTAL_EN': None,
+                'SO_VENTE': f"{query} do_domaine IN (0) and Dl_QTE > 0 and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                'SO_CONSO': f"{query} do_type IN (41) and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                'SO_DESAS': None,
+                'SO_TRANS': f"{query} do_type IN (23) and dl_mvtstock=3 and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                'SO_MVM': f"{query} do_type IN (21) and DO_PIECE not like'i00%' and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                'SO_INV': f"{query} do_type IN (21) and DO_PIECE like'i00%' and DL_DateBL between '{begin}' and '{end}' {conditions}",
+                'TOTAL_SO': None,
+                'STK_FINAL_CAL': None,
+                'STK_FINAL_SYS': f"{query} DL_MvtStock IN (1,3) and DL_DateBL<='{end}' {conditions}"
+            }
+            wheres = []
+            if families is not None:
                 for key, value in lists.items():
+                    vals = {"NAME": key, "VALUES": []}
                     if value is not None:
-                        query = query.replace('{where}', value).replace('{in}', filter_values)
-                        # print(f"=================================================")
-                        # print("QUERY: ", query)
-                        # print(f"=================================================")
-                        val = get_data(sql=query, columns=["FAMILLE", "VALUE"], conn=check)
-                        # print(f"=================================================")
-                        # print("VAL: ", val)
-                        # print(f"=================================================")
-                        if val is not None:
-                            val = {key: val.to_dict(orient='records')}
-                        else:
-                            val = {key: []}
-                    else:
-                        val = {key: []}
-                    wheres.append(val)
-                print(f"=================================================")
-                print("WHERES: ", wheres[0])
-                print(f"=================================================")
-                for index, row in gets.iterrows():
-                    lines = {"CATEGORY": row['CATEGORY'], "INTITULE": row['INTITULE']}
-                    for key, value in lists.items():
-                        if key in wheres:
-                            print(f"=================================================")
-                            print(f"{key}: {wheres[key]}")
-                            print(f"=================================================")
-                        # else:
-                        #     print(f"{key} N'existe pas !")
-                        # find_list = wheres[key]
+                        details = get_data(
+                            sql=value.replace('{in}', filter_values),
+                            columns=["CATEGORY", "VALUES"],
+                            conn=check
+                        )
+                        if details is not None:
+                            vals['VALUES'] = details.to_dict(orient="records")
+                    wheres.append(vals)
 
-                        # if find_list:
-                        #     category_value = next((x['VALUE'] for x in find_list if x.get('FAMILLE') == row['CATEGORY']), 0)
-                        # else:
-                        #     category_value = 0
-                        # lines[item['key']] = category_value
-                    # datas.append(lines)
-            check.close()
+                check.close()
+
+                for index, row in families.iterrows():
+                    lines = {"CATEGORY": row["CATEGORY"], "INTITULE": row["INTITULE"]}
+                    for key, value in lists.items():
+                        lines[key] = find_value_in_wheres(wheres, key, row["CATEGORY"])
+                    datas.append(lines)
+
         else:
             messages.warning(request, f"Erreur de connexion a la base {societe.name} !")
             return redirect('app:get')
@@ -170,7 +151,7 @@ def get_inventory_ajax(request):
         "data": datas
     }
     # print(f"=================================================")
-    # print(f"{context}")  # Corrected line
+    # print(f"Data : {context}")  # Corrected line
     # print("=======================================================")
     return JsonResponse(context, safe=False)
 

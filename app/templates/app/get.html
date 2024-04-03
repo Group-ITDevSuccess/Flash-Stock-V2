@@ -193,8 +193,25 @@
                     },
                     columnDefs: [
                         {targets: [0], orderable: false},
-                        {targets: [], className: 'text-right'},
-                        {targets: [], className: "cursor-pointer"},
+                        {targets: [3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20], className: 'text-right'},
+                        {targets: [3, 4, 5, 6, 8, 9, 10, 12, 13, 15, 16, 17, 20], className: "cursor-pointer"},
+                        {
+                            targets: [],
+                            render: DataTable.render.datetime()
+                        },
+                        {
+                            target: [3, 4, 5, 6, 8, 9, 10, 12, 13, 15, 16, 17, 20],
+                            render: function (data, type, cell) {
+                                if (data !== '') {
+                                    return parseFloat(data).toLocaleString('fr-FR', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    });
+                                }
+                                return data
+                            }
+                        },
+
                     ],
                     order: [[1, 'asc']],
                     fixedColumns: {
@@ -229,31 +246,187 @@
                         {data: 'STK_FINAL_CAL'},
                         {data: 'STK_FINAL_SYS'}
                     ],
-                    rowCallback: function (rows, data, start, end, display) {
+                    initComplete: function (settings, json) {
                         let api = this.api();
                         let numColumns = api.columns().nodes().length;
 
-                        for (let i = 2; i < numColumns; i++) {
+                        for (let i = 3; i < numColumns; i++) {
                             let values;
-                            if ([5].includes(i)) {
+                            try {
+                                let total_sum = api.column(i, {page: 'current'}).data().reduce(function (a, b) {
+                                    return formatNumberToFr(a) + formatNumberToFr(b);
+                                }, 0);
                                 try {
-                                    let total_sum = api.column(i, {page: 'current'}).data().reduce(function (a, b) {
-                                        return formatNumberToFr(a) + formatNumberToFr(b);
-                                    }, 0);
-                                    try {
-                                        values = parseFloat(total_sum).toLocaleString('fr-FR');
+                                    values = parseFloat(total_sum).toLocaleString('fr-FR');
 
-                                    } catch (e) {
-                                        values = ''
-                                    }
                                 } catch (e) {
-                                    let footerElement = api.column(i).footer();
-                                    values = footerElement ? footerElement.innerHTML : '';
+                                    values = ''
                                 }
-                                $(api.column(i).footer()).html(values);
+                            } catch (e) {
+                                let footerElement = api.column(i).footer();
+                                values = footerElement ? footerElement.innerHTML : '';
                             }
+                            $(api.column(i).footer()).html(values);
 
                         }
+                    }
+                })
+                $(dataTable.table().container()).on('click', 'td', function () {
+                    let cell = dataTable.cell(this);
+                    let info_row = JSON.stringify(cell.index())
+
+                    let parsedInfoRow = JSON.parse(info_row);
+                    let row = parsedInfoRow.row;
+                    let column = parsedInfoRow.column;
+                    if (![0, 1, 2, 7, 11, 14, 18, 19].includes(column)) {
+                        let rowData = dataTable
+                            .rows(row)
+                            .data()
+                            .toArray();
+                        let data_row = JSON.stringify(rowData)
+
+                        let modalHtml = `
+                            <div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-xl" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="exampleModalLabel">Détail de la ligne selectionner</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <table id="modalTable" class="display nowrap" style="width:100%">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="text-right"></th>
+                                                        <th class="text-right"></th>
+                                                        <th class="text-right"></th>
+                                                        <th class="text-right"></th>
+                                                        <th class="text-right"></th>
+                                                        <th class="text-right"></th>
+                                                        <th class="text-right"></th>
+                                                        <th class="text-right"></th>
+                                                        <th class="text-right"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tfoot class="">
+                                                    <tr>
+                                                        <th colspan="5" class="text-right">Total :</th>
+                                                        <th class="text-right"></th>
+                                                        <th class="text-right"></th>
+                                                        <th class="text-right"></th>
+                                                        <th class="text-right"></th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        $('body').append(modalHtml);
+
+                        let detailsModal = $('#detailsModal');
+
+                        detailsModal.on('shown.bs.modal', function () {
+                            $('#modalTable').DataTable().destroy();
+                            new DataTable('#modalTable', {
+                                ajax: {
+                                    url: '',
+                                    type: 'POST',
+                                    data: {
+                                        info_row: info_row,
+                                        data_row: data_row
+                                    }
+                                },
+                                info: false,
+                                scrollCollapse: true,
+                                scrollX: false,
+                                paging: false,
+                                fixedColumns: {
+                                    start: 2,
+                                    end: 2
+                                },
+                                scrollY: '50vh',
+                                layout: {
+                                    topStart: {
+                                        buttons: [
+                                            {
+                                                extend: 'searchBuilder',
+                                                config: {
+                                                    depthLimit: 2
+                                                }
+                                            },
+                                            'excel',
+                                            'pdf',
+                                            'print',
+
+                                        ]
+                                    }
+                                },
+                                searching: true,
+                                deferRender: true,
+                                processing: true,
+                                serverSide: true,
+                                colReorder: true,
+                                createdRow: function (row, data, dataIndex) {
+                                    $('td', row).eq(0).html(dataIndex + 1);
+                                },
+                                columnDefs: [
+                                    {targets: [0, 7], className: 'text-right'},
+                                    {
+                                        targets: [3],
+                                        render: DataTable.render.date()
+                                    },
+                                    {
+                                        target: [7],
+                                        render: function (data, type, cell) {
+                                            // Format the number with desired precision and separators
+                                            return parseFloat(data).toLocaleString('fr-FR', {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2
+                                            });
+                                        }
+                                    },
+                                ],
+
+                                columns: [
+                                    {title: '#', data: null, width: '5%'},
+                                    {title: 'NUM', data: 'num'},
+                                    {title: 'TYPE', data: 'types'},
+                                    {title: 'DATE', data: 'dates'},
+                                    {title: 'REFERENCE', data: 'ref'},
+                                    {title: 'DESIGNATION', data: 'designation'},
+                                    {title: 'STATUS', data: 'status'},
+                                    {title: 'SOLDE', data: 'stu'},
+                                    {title: 'UNITE', data: 'unite'},
+                                ],
+                                initComplete: function (row, data, start, end, display) {
+                                    let api = this.api();
+                                    let currentPosition = api.colReorder.transpose(7);
+                                    let total = api
+                                        .column(currentPosition)
+                                        .data()
+                                        .reduce((a, b) => formatNumberToFr(a) + formatNumberToFr(b), 0);
+                                    {#console.log(total)#}
+                                    api.column(currentPosition)
+                                        .footer()
+                                        .innerHTML = `${total.toLocaleString('fr-FR',
+                                        {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        }
+                                    )} Ariary`;
+
+                                },
+                            })
+
+                        })
+                        detailsModal.modal('show');
                     }
                 })
             }

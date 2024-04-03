@@ -26,7 +26,7 @@ def check_base(server, name, value, username, password):
                       f"PWD={password}"
         conn = pyodbc.connect(value_input)
         # conn.close()
-        print(f"Connected in {name} in {value_input}")
+        # print(f"Connected in {name} in {value_input}")
     except pyodbc.Error as e:
         # Si une erreur se produit lors de la connexion, ajoutez le serveur à la liste des bases sans accès
         print("===============================")
@@ -188,7 +188,7 @@ def get_data(sql, conn, columns):
                     if all(isinstance(row, tuple) for row in rows):
                         df = pd.DataFrame(rows, columns=columns)
         except Exception as e:
-            write_log(f"Erreur execute_sql : {str(e)}")
+            write_log(f"Erreur execute_sql {sql} : {str(e)}")
     return df
 
 
@@ -200,6 +200,18 @@ def chercher(df, value):
                 return row['VALUE']
 
     return result
+
+
+def find_value_in_wheres(wheres, name, category_to_find):
+    found_value = ''
+    for item in wheres:
+        if item["NAME"] == name:
+            for value in item["VALUES"]:
+                if value["CATEGORY"] == category_to_find:
+                    found_value = value.get('VALUES')
+                    break
+            break
+    return found_value
 
 
 def execute(data, categories, value, intitule, debut, fin, conn, filtre):

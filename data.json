@@ -1,4 +1,4 @@
 {
-  "FAMILLE": "SELECT DISTINCT F_FAMILLE.FA_CodeFamille, FA_INTITULE   FROM F_DOCLIGNE\n  inner join F_ARTICLE on F_DOCLIGNE.ar_ref=F_ARTICLE.ar_ref\n inner join F_FAMILLE on F_ARTICLE.FA_CodeFamille=F_FAMILLE.FA_CodeFamille WHERE DL_MvtStock IN (1,3) and DE_No in({in})",
-  "COLUMN": "SELECT FA_CodeFamille, sum((case when (DL_MvtStock=1 and DL_QTE<0) then -DL_QTE  when DL_MvtStock=3 then -DL_QTE else DL_QTE end)*DL_CMUP) FROM F_DOCLIGNE  inner join F_ARTICLE on F_DOCLIGNE.ar_ref=F_ARTICLE.ar_ref  WHERE  {where}  and DE_No in({in})  group by FA_CodeFamille"
+  "FAMILLE": "SELECT DISTINCT F_FAMILLE.FA_CodeFamille, FA_INTITULE   FROM F_DOCLIGNE\n  inner join F_ARTICLE on F_DOCLIGNE.ar_ref=F_ARTICLE.ar_ref inner join F_FAMILLE on F_ARTICLE.FA_CodeFamille=F_FAMILLE.FA_CodeFamille WHERE DL_MvtStock IN (1,3) and DE_No in({in}) ",
+  "COLUMN": "SELECT FA_CodeFamille, sum((case when (DL_MvtStock=1 and DL_QTE<0) then -DL_QTE  when DL_MvtStock=3 then -DL_QTE else DL_QTE end)*DL_CMUP) FROM F_DOCLIGNE  inner join F_ARTICLE on F_DOCLIGNE.ar_ref=F_ARTICLE.ar_ref  WHERE "
 }
