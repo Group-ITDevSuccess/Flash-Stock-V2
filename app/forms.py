@@ -9,12 +9,12 @@ from utils.script import get_choix
 class SearchForm(forms.Form):
     debut = forms.DateField(
         label='Début',
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+        widget=forms.DateInput(format='%d/%m/%Y', attrs={'type': 'date', 'class': 'form-control'})
     )
 
     fin = forms.DateField(
         label='Fin',
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+        widget=forms.DateInput(format='%d/%m/%Y',attrs={'type': 'date', 'class': 'form-control'})
     )
 
     def __init__(self, *args, **kwargs):
